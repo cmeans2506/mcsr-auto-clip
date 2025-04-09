@@ -7,26 +7,27 @@
 
 ### 1. 安装依赖组件
 #### ① FFmpeg 安装
-- 下载 [FFmpeg](https://ffmpeg.org/) 
-- 将 `ffmpeg.exe` 所在路径加入系统环境变量
+- 下载 [FFmpeg](https://github.com/BtbN/FFmpeg-Builds/releases) 选择 `ffmpeg-master-latest-win64-gpl.zip`
+
+- 将 `ffmpeg.exe` 加入系统环境变量
 
 #### ② OBS 配置
 1. OBS 中开启WebSocket服务器
    ```
-   OBS菜单栏 -> 工具 -> WebSocket服务器设置 -> 启用
+   OBS菜单栏 -> 工具 -> WebSocket服务器设置 -> 启用，身份验证关闭
    ```
 2. 启用回放缓存：
    ```
-   OBS控制按钮 -> 设置 -> 输出 -> 回放缓存 -> 启用
+   OBS控制按钮 -> 设置 -> 输出 -> 回放缓存 -> 启用，回放时长上限1200秒（建议）
    ```
 3. 记录 websocket 连接信息（默认：`localhost:4455`）
 
 #### ③ biliup 部署
-- 下载 [biliup](https://github.com/ForgQi/biliup-rs) 到工作目录
+- 下载 [biliup](https://github.com/ForgQi/biliup-rs) 到工作目录（参考下文配置说明）
 - 登录哔哩哔哩账号
 
 #### ④chromium 部署
-- 下载 chromium
+- 下载 [chromium](https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F1135619%2Fchrome-win.zip?generation=1682469079864558&alt=media)
 - 修改配置文件路径（参考下文配置说明）
 
 

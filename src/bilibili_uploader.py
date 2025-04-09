@@ -63,7 +63,7 @@ class BilibiliUploader:
 
     def upload(self, video_info: VideoInfoGenerator.VideoInfo):
         cmd = [
-            "biliup",
+            str(self._biliup_path),
             "upload",
             "--copyright", "1",
             "--tid", "17",
