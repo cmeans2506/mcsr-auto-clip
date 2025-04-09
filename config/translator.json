@@ -1,0 +1,41 @@
+{
+  "event_map": {
+    "nether": "进地狱",
+    "bastion": "猪堡",
+    "fortress": "下界要塞",
+    "first_portal": "盲传",
+    "stronghold": "隔墙有眼",
+    "end": "末地",
+    "finish": "结束"
+  },
+  "timeline_map": {
+    "story.enter_the_nether": "勇往直下",
+    "nether.find_bastion": "光辉岁月",
+    "nether.find_fortress": "阴森的要塞",
+    "nether.obtain_blaze_rod": "与火共舞",
+    "projectelo.timeline.blind_travel": "盲传",
+    "story.follow_ender_eye": "隔墙有眼",
+    "projectelo.timeline.death_spawnpoint": "饥饿重置",
+    "story.enter_the_end": "进入末地",
+    "end.kill_dragon": "屠龙"
+  },
+  "seedtype_map": {
+    "BURIED_TREASURE": "宝藏",
+    "SHIPWRECK": "沉船",
+    "VILLAGE": "村庄",
+    "DESERT_TEMPLE": "沙漠神殿",
+    "RUINED_PORTAL": "废门"
+  },
+  "bastion_map": {
+    "BRIDGE": "桥",
+    "STABLES": "棚",
+    "HOUSING": "居住区",
+    "TREASURE": "藏宝室"
+  },
+  "match_type_map": {
+    "CASUAL_MATCH": "休闲模式",
+    "RANKED_MATCH": "排位模式",
+    "PRIVATE_ROOM_MATCH": "私人房间",
+    "EVNET_MODE_MATCH": "活动模式"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "player": {
+    "name": "Cmeans",
+    "uuid": "3affdb407396456abcca42dbeb102331"
+  },
+  "clip_setting":{
+    "CASUAL_MATCH": {
+      "max_time": 0,
+      "seed_type": [],
+      "bastion_type": []
+    },
+    "RANKED_MATCH": {
+      "max_time": 720000,
+      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
+      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
+    },
+    "PRIVATE_ROOM_MATCH": {
+      "max_time": 660000,
+      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
+      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
+    },
+    "EVNET_MODE_MATCH": {
+      "max_time": 0,
+      "seed_type": [],
+      "bastion_type": []
+    }
+  },
+  "upload_setting": {
+    "CASUAL_MATCH": {
+      "max_time": 0,
+      "seed_type": [],
+      "bastion_type": []
+    },
+    "RANKED_MATCH": {
+      "max_time": 660000,
+      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
+      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
+    },
+    "PRIVATE_ROOM_MATCH": {
+      "max_time": 600000,
+      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
+      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
+    },
+    "EVNET_MODE_MATCH": {
+      "max_time": 0,
+      "seed_type": [],
+      "bastion_type": []
+    }
+  },
+  "base_dir": "D:/视频",
+
+  "host": "localhost",
+  "port": 4455,
+
+  "browser_executable": "D:/Software/chrome-win/chrome.exe",
+  "use_cover": true
+}

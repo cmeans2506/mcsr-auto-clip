@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cover for ranked</title>
+    <style>
+         @font-face {
+            font-family: 'Minecraftia';
+            src: url('{{font_path}}') format('truetype');
+        }
+
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("{{bg_path}}") no-repeat center center/cover;
+            filter: blur(10px);
+            z-index: -2;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 1)) 100%;
+            z-index: -1;
+        }
+
+        :root {
+            --size: 750px;
+        }
+
+        .player-container {
+            text-align: center;
+            color: white;
+            font-family: Minecraftia;
+            font-size: 80px;
+            text-shadow: 2px 2px 4px #000000;
+        }
+
+        .left-player {
+            position: fixed;
+            bottom: -20px;
+            left: 5%;
+        }
+
+
+        .right-player {
+            position: fixed;
+            bottom: -20px;
+            right: 5%;
+        }
+
+        .player {
+            width: var(--size);
+            height: var(--size);
+            border-radius: 10px;
+            filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8));
+            z-index: 1;
+        }
+
+        .player-name {
+            border-radius: 10px;
+            filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8));
+        }
+
+        .ranked-image {
+            width: 480px;
+            height: 480px;
+        }
+
+        .match-info {
+            color: white;
+            font-family: Minecraftia;
+            font-size: 60px;
+            filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8));
+        }
+
+        .time {
+            color: white;
+            font-family: Minecraftia;
+            font-size: 280px;
+            z-index: 10;
+            position: relative;
+            filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8));
+            background: linear-gradient(220.55deg, #00E0EE 0%, #AD00FE 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background"></div>
+    <div class="overlay"></div>
+    <div class="player-container left-player">
+        <div class="player-name">{{left_player.name}}</div>
+        <img class="player" src=https://vzge.me/bust/512/{{left_player.uuid}}>
+
+    </div>
+    <div class="player-container right-player">
+        <div class="player-name">{{right_player.name}}</div>
+        <img class="player" src=https://vzge.me/bust/512/{{right_player.uuid}}?y=-40>
+    </div>
+    <div style="width: 100%;height: 100%;text-align: center;">
+        <img class="ranked-image" src="{{ ranked_icon }}">
+        <div class="match-info">match id</div>
+        <div class="match-info">[{{match_id}}]</div>
+        <div class="time">{{result_time}}</div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,247 @@
+from typing import Optional
+from pydantic import BaseModel, Field
+import requests
+from enum import Enum
+from config import config
+import util
+
+
+class Seed(BaseModel):
+    id_: str = Field(alias='id')
+    overworld: str
+    bastion: str
+    endTowers: list[int]
+    variations: list[str]
+
+
+class Player(BaseModel):
+    uuid: str
+    nickname: str
+    roleType: int
+    eloRate: int
+    eloRank: int
+    country: Optional[str]
+
+
+class Result(BaseModel):
+    uuid: Optional[str] = None
+    time: int
+
+
+class Change(BaseModel):
+    uuid: str
+    change: Optional[int]
+    eloRate: Optional[int]
+
+
+class Rank(BaseModel):
+    season: Optional[str] = None
+    allTime: Optional[str] = None
+
+class MatchType(Enum):
+    CASUAL_MATCH = 1
+    RANKED_MATCH = 2
+    PRIVATE_ROOM_MATCH = 3
+    EVNET_MODE_MATCH = 4
+
+# MatchInfo 是简化版的比赛信息，后面的 MatchData 是详细的
+class MatchInfo(BaseModel):
+
+
+    id_: int = Field(alias='id')
+    type_: MatchType = Field(alias='type')
+    seed: Seed
+    category: str
+    gameMode: str
+    players: list[Player]
+    spectators: list[Player]
+    result: Result
+    forfeited: bool
+    decayed: bool
+    rank: Rank
+    changes: list[Change]
+    season: int
+    date: int
+    seedType: str
+    bastionType: str
+    tag: Optional[str] = None
+
+    def get_opponent_info(self) -> Player:
+        return next(filter(lambda player_info: player_info.uuid != config.player.uuid, self.players), None)
+    def get_my_info(self) -> Player:
+        return next(filter(lambda player_info: player_info.uuid == config.player.uuid, self.players), None)
+
+
+class UserData(BaseModel):
+    class Achievements(BaseModel):
+        class AchievementItem(BaseModel):
+            id_: str = Field(alias='id')
+            date: int
+            data: list
+            level: int
+            goal: Optional[int] = None
+
+        display: list
+        total: list[AchievementItem]
+
+    class Timestamp(BaseModel):
+        firstOnline: int
+        lastOnline: int
+        lastRanked: int
+        nextDecay: Optional[int]
+
+
+    class Statistics(BaseModel):
+        class StatisticsCategory(BaseModel):
+            class RankedCasualStats(BaseModel):
+                ranked: int
+                casual: Optional[int] = None
+
+            bestTime: RankedCasualStats
+            highestWinStreak: RankedCasualStats
+            currentWinStreak: RankedCasualStats
+            playedMatches: RankedCasualStats
+            playtime: RankedCasualStats
+            completionTime: RankedCasualStats
+            forfeits: RankedCasualStats
+            completions: RankedCasualStats
+            wins: RankedCasualStats
+            loses: RankedCasualStats
+
+        season: StatisticsCategory
+        total: StatisticsCategory
+
+    class SeasonResult(BaseModel):
+        class LastSeasonResult(BaseModel):
+            eloRate: int
+            eloRank: int
+            phasePoint: int
+
+        last: LastSeasonResult
+        highest: int
+        lowest: int
+        phases: list
+
+    uuid: str
+    nickname: str
+    roleType: int
+    eloRate: int
+    eloRank: int
+    achievements: Achievements
+    timestamp: Timestamp
+    statistics: Statistics
+    connections: dict
+    weeklyRaces: list
+    country: str
+    seasonResult: SeasonResult
+
+
+class MatchData(BaseModel):
+    class Timeline(BaseModel):
+        uuid: str
+        time: int
+        type_: str = Field(alias="type")
+
+    id_: int = Field(alias='id')
+    type_: MatchType = Field(alias="type")
+    seed: Seed
+    category: str
+    players: list[Player]
+    spectators: list[Player]
+    result: Result
+    forfeited: bool
+    decayed: bool
+    rank: Rank
+    changes: list[Change]
+    completions: list[Result]
+    timelines: list[Timeline]
+    season: int
+    date: int
+    seedType: str
+    bastionType: str
+    tag: Optional[str] = None
+    replayExist: bool
+
+    def get_opponent_timeline(self, type_: str) -> Optional[Timeline]:
+        return util.find_first(lambda timeline:timeline.type_ == type_
+                                           and timeline.uuid != config.player.uuid, self.timelines)
+
+    def get_player(self, uuid: str) -> Player:
+        return util.find_first(lambda p:p.uuid == uuid, self.players)
+
+
+class RankedService:
+    _RANKED_API = "https://mcsrranked.com/api/users/"
+    _MATCH_API = "https://mcsrranked.com/api/matches/"
+    _MATCHES_API_EXTENSION = "/matches"
+
+    def __init__(self, name: str, uuid: str):
+        """
+
+        :param name: 玩家名称
+        :param uuid: 玩家的uuid
+        """
+        self._name = name
+        self._uuid = uuid
+        self._cliped_matches: list[int] = []
+
+    def get_recent_matches(self, match_type: Optional[MatchType] = None, count: int = 50) -> list[MatchInfo]:
+        api = f"{RankedService._RANKED_API}{self._name}{RankedService._MATCHES_API_EXTENSION}?count={count}"
+        if match_type is not None:
+            api += f"&type={match_type.value}"
+        data = requests.get(api).json()
+        if data["status"] != "success":
+            raise RuntimeError(data["data"])
+
+        return [MatchInfo(**match_info) for match_info in data["data"]]
+
+    def get_latest_match(self) -> Optional[MatchInfo]:
+        match_info_list = self.get_recent_matches(count=5)
+        if not match_info_list:
+            return None
+
+        latest_match = match_info_list[0]
+        print(f"最新对局：{latest_match}")
+
+        if latest_match.date < config.launch_time:
+            print("比赛时间早于程序启动时间，跳过")
+            return None
+        if latest_match.result.uuid != config.player.uuid:
+            print("比赛未胜利，跳过")
+            return None
+        if latest_match.forfeited or latest_match.decayed:
+            print("不是完整比赛，跳过")
+            return None
+        if latest_match.result.time > config.clip_setting[latest_match.type_.name].max_time:
+            print(f"比赛的完成时间{util.ts_to_str(latest_match.result.time)}超过了最大允许时间"
+                  f"{util.ts_to_str(config.clip_setting[latest_match.type_.name].max_time)}，跳过")
+            return None
+        if latest_match.bastionType not in config.clip_setting[latest_match.type_.name].bastion_type:
+            print(f"比赛的猪堡类型是{latest_match.bastionType}，不在指定的范围内："
+                  f"{config.clip_setting[latest_match.type_.name].bastion_type}，跳过")
+            return None
+        if latest_match.seedType not in config.clip_setting[latest_match.type_.name].seed_type:
+            print(f"比赛的主世界类型是{latest_match.seedType}，不在指定的范围内："
+                  f"{config.clip_setting[latest_match.type_.name].seed_type}，跳过")
+            return None
+        if latest_match.id_ in self._cliped_matches:
+            print(f"比赛已经被切片过，跳过")
+            return None
+
+        self._cliped_matches.append(latest_match.id_)
+        return latest_match
+
+    def get_user_data(self) -> UserData:
+        api = f"{RankedService._RANKED_API}{self._name}"
+        return UserData(**(requests.get(api).json()["data"]))
+
+    def get_match_data(self, id_: int) -> MatchData:
+        api = f"{RankedService._MATCH_API}{id_}"
+        return MatchData(**(requests.get(api).json()["data"]))
+
+
+ranked_service = RankedService(name=config.player.name, uuid=config.player.uuid)
+if __name__ == "__main__":
+    print(ranked_service.get_latest_match())
+    print(ranked_service.get_user_data())
+    print(ranked_service.get_match_data(1909310))
