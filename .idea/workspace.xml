@@ -4,31 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5552e623-d722-49da-b13a-95c150305097" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/auto_clip.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config/config.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config/translator.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/auto_clip.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/bilibili_uploader.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/cover_generator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/description_generator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/ffmpeg_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/obs_controller.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/ranked_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/translator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/util.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/video_info_generator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/cover_for_ranked.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/fonts/mc.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/image/ranked_icon.png" afterDir="false" />
+    <list default="true" id="5552e623-d722-49da-b13a-95c150305097" name="更改" comment="initial commit">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,22 +34,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.bilibili_uploader.executor": "Run",
-    "Python.config.executor": "Run",
-    "Python.cover_generator.executor": "Run",
-    "Python.ffmpeg_service.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.obs_controller.executor": "Run",
-    "Python.ranked_service.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "settings.editor.selected.configurable": "preferences.lookFeel"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.bilibili_uploader.executor&quot;: &quot;Run&quot;,
+    &quot;Python.config.executor&quot;: &quot;Run&quot;,
+    &quot;Python.cover_generator.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ffmpeg_service.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.obs_controller.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ranked_service.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Python.main">
     <configuration name="bilibili_uploader" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="auto_clip" />
@@ -210,6 +187,19 @@
       <option name="presentableId" value="Default" />
       <updated>1743582426088</updated>
     </task>
+    <task id="LOCAL-00001" summary="initial commit">
+      <option name="closed" value="true" />
+      <created>1744177482218</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1744177482218</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="initial commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="initial commit" />
   </component>
 </project>
