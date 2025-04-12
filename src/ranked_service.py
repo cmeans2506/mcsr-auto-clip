@@ -18,8 +18,8 @@ class Player(BaseModel):
     uuid: str
     nickname: str
     roleType: int
-    eloRate: int
-    eloRank: int
+    eloRate: Optional[int]
+    eloRank: Optional[int]
     country: Optional[str]
 
 
@@ -182,6 +182,23 @@ class RankedService:
         :param uuid: 玩家的uuid
         """
         self._name = name
+        try:
+            print("正在检验 'player.name' 和 'player.uuid' ")
+            api = f"{RankedService._RANKED_API}{self._name}"
+            responce = requests.get(api)
+        except requests.exceptions.RequestException as e:
+            print(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
+            exit()
+        if responce.status_code != 200:
+            print(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
+            exit()
+        if responce.json()["data"]["uuid"] != uuid:
+            print(f"在 'config.json' 中配置的 'player.uuid' 有误：{uuid}，"
+                  f"已修正为：{responce.json()['data']['uuid']}")
+            uuid = responce.json()["data"]["uuid"]
+
+        print("'player.name' 和 'player.uuid' 检验通过！")
+
         self._uuid = uuid
         self._cliped_matches: list[int] = []
 
@@ -189,7 +206,11 @@ class RankedService:
         api = f"{RankedService._RANKED_API}{self._name}{RankedService._MATCHES_API_EXTENSION}?count={count}"
         if match_type is not None:
             api += f"&type={match_type.value}"
-        data = requests.get(api).json()
+        try:
+            data = requests.get(api).json()
+        except requests.exceptions.RequestException as e:
+            print(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+            return []
         if data["status"] != "success":
             raise RuntimeError(data["data"])
 

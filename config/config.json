@@ -10,7 +10,7 @@
       "bastion_type": []
     },
     "RANKED_MATCH": {
-      "max_time": 720000,
+      "max_time": 900000,
       "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
       "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
     },
@@ -32,7 +32,7 @@
       "bastion_type": []
     },
     "RANKED_MATCH": {
-      "max_time": 660000,
+      "max_time": 900000,
       "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
       "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
     },
@@ -53,5 +53,6 @@
   "port": 4455,
 
   "browser_executable": "D:/Software/chrome-win/chrome.exe",
-  "use_cover": true
+  "use_cover": true,
+  "extra_seconds": 15
 }

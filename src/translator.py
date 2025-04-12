@@ -1,9 +1,10 @@
 import json
+from pathlib import Path
 
 
 class Translator:
     def __init__(self):
-        with open("../config/translator.json", "r", encoding="utf8") as tr_file:
+        with open(Path(__file__).parent.parent / "config" / "translator.json", "r", encoding="utf8") as tr_file:
             tr_info = json.load(tr_file)
             self.event_map = tr_info["event_map"]
             self.timeline_map = tr_info["timeline_map"]

@@ -28,7 +28,7 @@ class FfmpegService:
             raise EnvironmentError("未找到ffprobe，请确保已安装FFmpeg并将ffprobe添加到系统环境变量！"
                                    "（https://github.com/BtbN/FFmpeg-Builds/releases）")
         if shutil.which("ffmpeg") is None:
-            raise EnvironmentError("未找到ffprobe，请确保已安装FFmpeg并将ffprobe添加到系统环境变量！"
+            raise EnvironmentError("未找到ffmpeg，请确保已安装FFmpeg并将ffmpeg添加到系统环境变量！"
                                    "（https://github.com/BtbN/FFmpeg-Builds/releases）")
 
         print("ffmpeg检查通过！")
@@ -63,7 +63,7 @@ class FfmpegService:
 
     @staticmethod
     def auto_cut(match_info: MatchInfo, video_path: Path) -> Path:
-        sseof_seconds = match_info.result.time // 1000 + 15
+        sseof_seconds = match_info.result.time // 1000 + config.extra_seconds
         output_file_path = config.video_dir / f"match[{match_info.id_}].mp4"
         cmd = [
             "ffmpeg",
@@ -73,7 +73,7 @@ class FfmpegService:
             "-avoid_negative_ts", "1",
             str(output_file_path)
         ]
-        subprocess.run(cmd)
+        subprocess.run(cmd, capture_output=True)
         print(f"已生成切片{output_file_path}")
         return output_file_path
 
@@ -99,5 +99,5 @@ ffmpeg_service = FfmpegService()
 
 
 if __name__ == "__main__":
-    ffmpeg_service = FfmpegService()
+    pass
 

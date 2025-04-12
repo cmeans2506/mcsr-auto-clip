@@ -30,7 +30,7 @@ class BilibiliUploader:
         self._up_history_path: Path = config.base_dir / "up_history.json"
         if self._up_history_path.exists():
             with open(self._up_history_path, "r", encoding="utf8") as up_history_file:
-                self._upload_history_list = json.load(up_history_file)
+                self._upload_history_list = [BilibiliUploader.UploadHistoryInfo(**up_history) for up_history in json.load(up_history_file)]
 
 
     def _check(self):
@@ -57,7 +57,7 @@ class BilibiliUploader:
 
     def _write_back(self):
         with open(self._up_history_path, "w", encoding="utf8") as up_history_file:
-            history_data = [item.model_dump_json(by_alias=True) for item in self._upload_history_list]
+            history_data = [item.model_dump(by_alias=True) for item in self._upload_history_list]
             json.dump(history_data, up_history_file, indent=4)
 
 

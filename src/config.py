@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, ValidationError
 import time
 from pathlib import Path
 from datetime import datetime
@@ -26,6 +26,8 @@ class Config(BaseModel):
 
     use_cover: bool
 
+    extra_seconds: int
+
     @computed_field
     @property
     def video_dir(self) -> Path:
@@ -39,8 +41,16 @@ class Config(BaseModel):
         path = Path(__file__).parent.parent / "templates"
         return path
 
-with open(f"../config/config.json", "r", encoding="utf8") as f:
-    config = Config.model_validate_json(f.read())
+with open(Path(__file__).parent.parent / "config" / "config.json", "r", encoding="utf8") as f:
+    try:
+        config = Config.model_validate_json(f.read())
+    except ValidationError as exc:
+        if exc.errors()[0]['type'] == "json_invalid":
+            print(f"'config.json' 文件格式有误：{exc.errors()[0]['msg']}")
+        else:
+            print(f"解析 'config.json' 文件时出现错误：{'.'.join(exc.errors()[0]['loc'])}"
+              f"{exc.errors()[0]['msg']}，实际输入为：{exc.errors()[0]['input']}")
+        exit()
 
 if __name__ == "__main__":
     print(config)

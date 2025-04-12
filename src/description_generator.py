@@ -46,7 +46,8 @@ class DescriptionGenerator:
 
 比赛结果: """
         for ch in changes:
-            match_info_str += f"""
+            if ch.change is not None and ch.eloRate is not None:
+                match_info_str += f"""
 {self._match_data.get_player(ch.uuid).nickname:<16}{"胜" if ch.change > 0 else "败"}  ({ch.eloRate}  →  {ch.eloRate + ch.change})
 """
         match_info_str +=f"""
@@ -76,14 +77,12 @@ elo排名：{self._user_data.eloRank}
 
 
     def _generate_upload_reason(self):
-        upload_reason = "①sub11"
+        upload_reason = f"①sub{config.upload_setting[self._match_data.type_.name].max_time / (60 * 1000)}"
         return upload_reason
 
 
     def _generate_about_info(self):
-        return f""" · 个人主页：https://b23.tv/VyvEo6u 
- · 直播间链接：https://live.bilibili.com/26884166
- · 本场速通详细信息：https://mcsrrankedstats.vercel.app/{config.player.name}/{self._match_data.id_}/
+        return f""" · 本场速通详细信息：https://mcsrrankedstats.vercel.app/{config.player.name}/{self._match_data.id_}/
  · 更多详情：https://mcsrranked.com/api/matches/{self._match_data.id_}"""
 
 

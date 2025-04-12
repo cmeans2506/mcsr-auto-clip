@@ -60,20 +60,25 @@
 ```
 
 #### 配置字段说明
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `player` | Object | 玩家信息 |
-| `player.name` | String | Minecraft 游戏昵称 |
-| `player.uuid` | String | 玩家 UUID |
-| `clip_setting` | Object | 视频切片规则 |
-| `max_time` | Number | 最大允许时长（毫秒） |
-| `seed_type` | Array | 有效主世界类型白名单 |
-| `bastion_type` | Array | 有效猪堡类型白名单 |
-| `base_dir` | String | 工作目录路径 |
-| `host` | String | OBS websocket 主机地址 |
-| `port` | Number | OBS websocket 端口 |
-| `browser_executable` | String | Chromium 浏览器路径 |
-| `use_cover` | Boolean | 是否生成视频封面 |
+| 字段                   | 类型      | 说明                                                                       |
+|----------------------|---------|--------------------------------------------------------------------------|
+| `player`             | Object  | 玩家信息                                                                     |
+| `player.name`        | String  | Minecraft 游戏昵称                                                           |
+| `player.uuid`        | String  | 玩家 UUID(不要带'-')，可以从这里查：<br/>https://mcsrranked.com/api/users/{your_name} |
+| `clip_setting`       | Object  | 视频切片规则                                                                   |
+| `upload_setting`     | Object  | 视频上传规则                                                                   |
+| `max_time`           | Number  | 最大允许时长（毫秒）                                                               |
+| `seed_type`          | Array   | 有效主世界类型白名单                                                               |
+| `bastion_type`       | Array   | 有效猪堡类型白名单                                                                |
+| `base_dir`           | String  | 工作目录路径                                                                   |
+| `host`               | String  | OBS websocket 主机地址                                                       |
+| `port`               | Number  | OBS websocket 端口                                                         |
+| `browser_executable` | String  | Chromium 浏览器路径                                                           |
+| `use_cover`          | Boolean | 是否生成视频封面                                                                 |
+| `extra_seconds`      | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `比赛时间 + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大          |
+
+ - `clip_setting` 和 `upload_setting` 中的字段是相互对应的
+ - 其中，`upload_setting.***.max_time` 一定是小于等于 `clip_setting.***.max_time` 的，否则没有意义（有切片才能上传对吧）
 
 ### 3. 目录结构
 ```
@@ -83,8 +88,7 @@
 │   └── YYYYMMDD/      # 按日期分类
 │       ├── video.mp4  
 │       └── cover.jpg  
-├── up_history.json    # 上传记录
-└── config.json        # 配置文件
+└── up_history.json    # 上传记录
 ```
 
 ## 功能特性
