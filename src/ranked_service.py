@@ -82,7 +82,7 @@ class UserData(BaseModel):
             level: int
             goal: Optional[int] = None
 
-        display: list
+        display: list[AchievementItem]
         total: list[AchievementItem]
 
     class Timestamp(BaseModel):
@@ -95,7 +95,7 @@ class UserData(BaseModel):
     class Statistics(BaseModel):
         class StatisticsCategory(BaseModel):
             class RankedCasualStats(BaseModel):
-                ranked: int
+                ranked: Optional[int] = None
                 casual: Optional[int] = None
 
             bestTime: RankedCasualStats
@@ -112,28 +112,33 @@ class UserData(BaseModel):
         season: StatisticsCategory
         total: StatisticsCategory
 
+    class WeeklyRaces(BaseModel):
+        id_: int = Field(alias='id')
+        time: int
+        rank: int
+
     class SeasonResult(BaseModel):
         class LastSeasonResult(BaseModel):
-            eloRate: int
-            eloRank: int
+            eloRate: Optional[int]
+            eloRank: Optional[int]
             phasePoint: int
 
         last: LastSeasonResult
-        highest: int
-        lowest: int
+        highest: Optional[int]
+        lowest: Optional[int]
         phases: list
 
     uuid: str
     nickname: str
     roleType: int
-    eloRate: int
-    eloRank: int
+    eloRate: Optional[int]
+    eloRank: Optional[int]
     achievements: Achievements
     timestamp: Timestamp
     statistics: Statistics
     connections: dict
-    weeklyRaces: list
-    country: str
+    weeklyRaces: list[WeeklyRaces]
+    country: Optional[str]
     seasonResult: SeasonResult
 
 

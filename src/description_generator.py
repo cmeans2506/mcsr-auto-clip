@@ -12,6 +12,7 @@ class DescriptionGenerator:
         self._user_data = user_data
         self._video_path = video_path
 
+        self._video_info = ffmpeg_service.get_video_info(self._video_path)
 
     def _generate_timelines_info(self):
         def timeline_to_str(timeline: MatchData.Timeline) -> str:
@@ -60,24 +61,30 @@ class DescriptionGenerator:
 
     def _generate_user_info(self):
         total_match_count = self._user_data.statistics.season.playedMatches.ranked
+        if total_match_count == 0:
+            return f"""MC名称：{self._user_data.nickname}
+elo分：{self._user_data.eloRate}
+elo排名：{self._user_data.eloRank}"""
+
+        season_stats = self._user_data.statistics.season
         return f"""MC名称：{self._user_data.nickname}
 elo分：{self._user_data.eloRate}
 elo排名：{self._user_data.eloRank}
-个人最佳：{util.ts_to_str(self._user_data.statistics.season.bestTime.ranked)}
-最高连胜：{self._user_data.statistics.season.highestWinStreak.ranked}
+个人最佳：{util.ts_to_str(season_stats.bestTime.ranked)}
+最高连胜：{season_stats.highestWinStreak.ranked}
 总场次数：{total_match_count}
-游玩时长：{int(self._user_data.statistics.season.playtime.ranked / (1000 * 60 * 60))}小时
-平均完成：{util.ts_to_str(self._user_data.statistics.season.completionTime.ranked // self._user_data.statistics.season.completions.ranked)}
-投降场次：{self._user_data.statistics.season.forfeits.ranked} ({round(100 * self._user_data.statistics.season.forfeits.ranked / total_match_count, 2)}%)
-完成场次：{self._user_data.statistics.season.completions.ranked} ({round(100 * self._user_data.statistics.season.completions.ranked / total_match_count, 2)}%)
-胜利场次：{self._user_data.statistics.season.wins.ranked} ({round(100 * self._user_data.statistics.season.wins.ranked / total_match_count, 2)}%)
-失败场次：{self._user_data.statistics.season.loses.ranked} ({round(100 * self._user_data.statistics.season.loses.ranked / total_match_count, 2)}%)
+游玩时长：{int(season_stats.playtime.ranked / (1000 * 60 * 60))}小时
+平均完成：{util.ts_to_str(season_stats.completionTime.ranked // season_stats.completions.ranked)}
+投降场次：{season_stats.forfeits.ranked} ({round(100 * season_stats.forfeits.ranked / total_match_count, 2)}%)
+完成场次：{season_stats.completions.ranked} ({round(100 * season_stats.completions.ranked / total_match_count, 2)}%)
+胜利场次：{season_stats.wins.ranked} ({round(100 * season_stats.wins.ranked / total_match_count, 2)}%)
+失败场次：{season_stats.loses.ranked} ({round(100 * season_stats.loses.ranked / total_match_count, 2)}%)
 本赛季最高：{self._user_data.seasonResult.highest}
 本赛季最低：{self._user_data.seasonResult.lowest}"""
 
 
     def _generate_upload_reason(self):
-        upload_reason = f"①sub{config.upload_setting[self._match_data.type_.name].max_time / (60 * 1000)}"
+        upload_reason = f"①sub{config.upload_setting[self._match_data.type_.name].max_time // (60 * 1000)}"
         return upload_reason
 
 
@@ -87,16 +94,15 @@ elo排名：{self._user_data.eloRank}
 
 
     def _generate_video_info(self):
-        video_info = ffmpeg_service.get_video_info(self._video_path)
-        return f"""宽度：{video_info.width}
-高度：{video_info.height}
-帧率：{video_info.frame_rate}
-码率：{int(video_info.bit_rate / 1024)}kbps
-文件大小：{int(video_info.size / (1024 * 1024))}MB"""
+        return f"""宽度：{self._video_info.width}
+高度：{self._video_info.height}
+帧率：{self._video_info.frame_rate}
+码率：{int(self._video_info.bit_rate / 1024)}kbps
+文件大小：{int(self._video_info.size / (1024 * 1024))}MB"""
 
 
     def generate_video_desc(self):
-        return f"""大会员请开4K
+        return f"""{'大会员请开4K' if self._video_info.height > 1600 else ''}
 
 ■ 分段详情：
 {self._generate_timelines_info()}
