@@ -7,11 +7,12 @@ import util
 
 
 class Seed(BaseModel):
-    id_: str = Field(alias='id')
-    overworld: str
-    bastion: str
-    endTowers: list[int]
-    variations: list[str]
+    # 使用未筛选的种子，以下字段都为null或[]
+    id_: Optional[str] = Field(alias='id')
+    overworld: Optional[str]
+    bastion: Optional[str]
+    endTowers: Optional[list[int]]
+    variations: Optional[list[str]]
 
 
 class Player(BaseModel):
@@ -244,6 +245,9 @@ class RankedService:
         if latest_match.seedType not in config.clip_setting[latest_match.type_.name].seed_type:
             print(f"比赛的主世界类型是{latest_match.seedType}，不在指定的范围内："
                   f"{config.clip_setting[latest_match.type_.name].seed_type}，跳过")
+            return None
+        if latest_match.category != "ANY":
+            print(f"比赛的项目是{latest_match.category}，不是ANY%速通，跳过")
             return None
         if latest_match.id_ in self._cliped_matches:
             print(f"比赛已经被切片过，跳过")

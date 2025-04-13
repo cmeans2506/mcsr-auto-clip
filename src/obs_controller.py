@@ -30,13 +30,15 @@ class OBSController:
     def replay_save(self) -> Path:
         self._ws.call(obswebsocket.requests.SaveReplayBuffer())
 
-        def is_file_recent(file_path):
+        def is_file_recent(file_path: Path):
             try:
-                file_name = os.path.basename(file_path)
-                if not file_name.startswith("Replay "):
+                file_name = file_path.stem
+                if not (file_name.startswith(config.replay_prefix) and file_name.endswith(config.replay_suffix)):
                     return False
-                date_time_str = file_name.split("Replay ")[1].replace("-", " ").replace(".mp4", "")
-                file_time = datetime.strptime(date_time_str, "%Y %m %d %H %M %S")
+                date_time_str = file_name[len(config.replay_prefix):]
+                if len(config.replay_suffix) != 0:
+                    date_time_str = date_time_str[:-len(config.replay_suffix)]
+                file_time = datetime.strptime(date_time_str, config.filename_formatting)
                 current_time = datetime.now()
                 return current_time - file_time <= timedelta(minutes=1)
             except (IndexError, ValueError):
@@ -46,8 +48,8 @@ class OBSController:
         while 1:
             time.sleep(1)
             last_replay_buffer = self._ws.call(obswebsocket.requests.GetLastReplayBufferReplay())
-            video_path = last_replay_buffer.datain["savedReplayPath"]
-            if is_file_recent(video_path):
+            video_path: str = last_replay_buffer.datain["savedReplayPath"]
+            if is_file_recent(Path(video_path)):
                 print(f"回放已经保存到{video_path}")
                 return Path(video_path)
 
@@ -55,12 +57,12 @@ class OBSController:
         replay_status = self._ws.call(obswebsocket.requests.GetReplayBufferStatus())
 
         if replay_status.datain.get("outputActive") is None:
-            raise Exception("OBS回访缓存未启用！")
+            raise Exception("OBS回放缓存未启用！")
 
         if not replay_status.datain["outputActive"]:
-            print("回访缓存未开启，尝试启动...")
+            print("回放缓存未开启，尝试启动...")
             self._ws.call(obswebsocket.requests.StartReplayBuffer())
-            print("回访缓存已启动！")
+            print("回放缓存已启动！")
 
 obs_controller = OBSController(config.host, config.port)
 if __name__ == "__main__":

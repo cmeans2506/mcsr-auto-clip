@@ -2,7 +2,7 @@ from pathlib import Path
 import subprocess
 import json
 from dataclasses import dataclass
-from ranked_service import MatchInfo
+from ranked_service import MatchInfo, MatchType
 from config import config
 import shutil
 
@@ -63,8 +63,10 @@ class FfmpegService:
 
     @staticmethod
     def auto_cut(match_info: MatchInfo, video_path: Path) -> Path:
+        if match_info.type_ == MatchType.PRIVATE_ROOM_MATCH:
+            print("警告：当前为私人房间，如果未设置'当有人完成时比赛结束'则可能剪辑不准确！")
         sseof_seconds = match_info.result.time // 1000 + config.extra_seconds
-        output_file_path = config.video_dir / f"match[{match_info.id_}].mp4"
+        output_file_path = config.video_dir / f"match[{match_info.id_}].{config.output_format}"
         cmd = [
             "ffmpeg",
             "-sseof", f"-{sseof_seconds}",

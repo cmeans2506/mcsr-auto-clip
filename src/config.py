@@ -27,6 +27,10 @@ class Config(BaseModel):
     use_cover: bool
 
     extra_seconds: int
+    replay_prefix: str
+    replay_suffix: str
+    output_format: str
+    filename_formatting: str
 
     @computed_field
     @property

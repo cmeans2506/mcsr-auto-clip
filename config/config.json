@@ -54,5 +54,9 @@
 
   "browser_executable": "D:/Software/chrome-win/chrome.exe",
   "use_cover": true,
-  "extra_seconds": 15
+  "extra_seconds": 15,
+  "replay_prefix": "Replay ",
+  "replay_suffix": "",
+  "output_format": "mp4",
+  "filename_formatting": "%Y-%m-%d %H-%M-%S"
 }

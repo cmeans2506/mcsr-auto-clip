@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from ranked_service import MatchData, UserData, MatchInfo
+from ranked_service import MatchData, UserData, MatchInfo, MatchType
 from description_generator import DescriptionGenerator
 from cover_generator import CoverGenerator
 import util
@@ -32,6 +32,8 @@ class VideoInfoGenerator:
         title = f"RANKED {util.ts_to_str(self._match_data.result.time)}"
         if self._match_data.result.time <= self._user_data.statistics.total.bestTime.ranked:
             title += " 个人最佳"
+        if self._match_data.type_ == MatchType.PRIVATE_ROOM_MATCH:
+            title += "私人房间"
         title += f" {translator.seedtype_map[self._match_data.seedType]} {translator.bastion_map[self._match_data.bastionType]}"
         return title
 
