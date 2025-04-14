@@ -100,6 +100,10 @@ elo排名：{self._user_data.eloRank}
 码率：{int(self._video_info.bit_rate / 1024)}kbps
 文件大小：{int(self._video_info.size / (1024 * 1024))}MB"""
 
+    def _generate_repository_info(self):
+        return"""MCSR AUTO CLIP by @-Cmeans- 
+开源地址：https://github.com/cmeans2506/mcsr-auto-clip
+"""
 
     def generate_video_desc(self):
         return f"""{'大会员请开4K' if self._video_info.height > 1600 else ''}
@@ -121,4 +125,7 @@ elo排名：{self._user_data.eloRank}
 
 ■ 视频信息：
 {self._generate_video_info()}
+
+■ 项目信息：
+{self._generate_repository_info()}
 """

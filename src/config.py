@@ -32,10 +32,25 @@ class Config(BaseModel):
     output_format: str
     filename_formatting: str
 
+    replay_threshold_seconds: int
+    clean_raw_file: bool
+    use_death_clip: bool
+    death_clip_duration: int
+    death_clip_ahead_seconds: int
+
+    use_messagebox: bool
+
     @computed_field
     @property
     def video_dir(self) -> Path:
         path = self.base_dir / "mcsr" / datetime.now().strftime("%Y%m%d")
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @computed_field
+    @property
+    def death_clip_dir(self) -> Path:
+        path = self.base_dir / "death_clip" / datetime.now().strftime("%Y%m%d")
         path.mkdir(parents=True, exist_ok=True)
         return path
 

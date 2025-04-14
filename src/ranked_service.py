@@ -206,7 +206,8 @@ class RankedService:
         print("'player.name' 和 'player.uuid' 检验通过！")
 
         self._uuid = uuid
-        self._cliped_matches: list[int] = []
+        self._any_clip_matches: list[int] = []
+        self._death_clip_matches: list[int] = []
 
     def get_recent_matches(self, match_type: Optional[MatchType] = None, count: int = 50) -> list[MatchInfo]:
         api = f"{RankedService._RANKED_API}{self._name}{RankedService._MATCHES_API_EXTENSION}?count={count}"
@@ -228,7 +229,7 @@ class RankedService:
             return None
 
         latest_match = match_info_list[0]
-        print(f"最新对局：{latest_match}")
+        print(f"最新对局：{latest_match.model_dump(mode='python', exclude_none=True, include={'id_', 'type_', 'category', 'players', 'result', 'forfeited', 'season', 'date', 'seedType', 'bastionType'})}")
 
         if latest_match.date < config.launch_time:
             print("比赛时间早于程序启动时间，跳过")
@@ -254,12 +255,35 @@ class RankedService:
         if latest_match.category != "ANY":
             print(f"比赛的项目是{latest_match.category}，不是ANY%速通，跳过")
             return None
-        if latest_match.id_ in self._cliped_matches:
+        if latest_match.id_ in self._any_clip_matches:
             print(f"比赛已经被切片过，跳过")
             return None
 
-        self._cliped_matches.append(latest_match.id_)
+        self._any_clip_matches.append(latest_match.id_)
         return latest_match
+
+    def get_latest_death_match(self) -> Optional[MatchData]:
+        match_info_list = self.get_recent_matches(count=5)
+        if not match_info_list:
+            return None
+
+        latest_match = match_info_list[0]
+        if latest_match.date < config.launch_time:
+            return None
+        if latest_match.id_ in self._death_clip_matches:
+            return None
+
+        latest_match_data = self.get_match_data(latest_match.id_)
+
+        def is_death_timeline(timeline: MatchData.Timeline) -> bool:
+            return timeline.type_ == "projectelo.timeline.death" and timeline.uuid == config.player.uuid
+        if util.find_first(is_death_timeline, latest_match_data.timelines) is None:
+            return None
+
+        print(f"最新死亡切片对局：match[{latest_match_data.id_}]")
+        self._death_clip_matches.append(latest_match_data.id_)
+        return latest_match_data
+
 
     def get_user_data(self) -> UserData:
         api = f"{RankedService._RANKED_API}{self._name}"

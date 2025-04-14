@@ -1,15 +1,21 @@
 import schedule
 import time
 from ranked_service import ranked_service
-from obs_controller import obs_controller
 from ffmpeg_service import  ffmpeg_service
 from config import config
 from bilibili_uploader import bilibili_uploader
 from video_info_generator import VideoInfoGenerator
+from obs_controller import obs_controller
 
 class AutoClip:
     def __init__(self):
         schedule.every(10).seconds.do(self._job)
+
+        if config.clean_raw_file:
+            schedule.every(2).minutes.do(obs_controller.clean)
+
+        if config.use_death_clip:
+            schedule.every(10).seconds.do(self._death_clip_job)
 
 
     def _job(self):
@@ -18,13 +24,9 @@ class AutoClip:
             return
 
         raw_video_path = obs_controller.replay_save()
-        print(f"存储了比赛[{latest_match.id_}]的录像：{raw_video_path}")
+        print(f"[any%切片]存储了比赛[{latest_match.id_}]的录像：{raw_video_path}")
 
         cut_video_path = ffmpeg_service.auto_cut(match_info=latest_match, video_path=raw_video_path)
-        # 用完，删掉
-        raw_video_path.unlink()
-        print(f"原始文件：{raw_video_path} 已删除")
-
 
         # 接下来是上传的逻辑
         def is_valid_for_upload():
@@ -49,6 +51,19 @@ class AutoClip:
             video_path=cut_video_path
         )
         bilibili_uploader.upload(video_info_generator.generate())
+
+
+    def _death_clip_job(self):
+        latest_match_data = ranked_service.get_latest_death_match()
+        if latest_match_data is None:
+            return
+
+        raw_video_path = obs_controller.replay_save()
+        print(f"[死亡切片]存储了比赛[{latest_match_data.id_}]的录像：{raw_video_path}")
+
+        cut_video_list = ffmpeg_service.death_clip(match_data=latest_match_data, video_path=raw_video_path)
+
+        # 不上传
 
 
     def run(self):

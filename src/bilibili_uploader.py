@@ -80,10 +80,13 @@ class BilibiliUploader:
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", cwd=config.base_dir)
         except subprocess.CalledProcessError as e:
-            messagebox.showerror("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
+            if config.use_messagebox:
+                messagebox.showerror("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
+            print("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             return
         aid, bvid = BilibiliUploader._parse_aid_bvid(result.stdout)
-        messagebox.showinfo("文件上传成功！", f"<{video_info.video_title}>文件已经上传至{bvid}")
+        if config.use_messagebox:
+            messagebox.showinfo("文件上传成功！", f"<{video_info.video_title}>文件已经上传至{bvid}")
         print(f"<{video_info.video_title}>文件已经上传至{bvid}")
 
         with self._lock:

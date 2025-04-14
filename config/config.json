@@ -58,5 +58,13 @@
   "replay_prefix": "Replay ",
   "replay_suffix": "",
   "output_format": "mp4",
-  "filename_formatting": "%Y-%m-%d %H-%M-%S"
+  "filename_formatting": "%Y-%m-%d %H-%M-%S",
+
+  "replay_threshold_seconds": 20,
+  "clean_raw_file": true,
+  "use_death_clip": true,
+  "death_clip_duration": 15,
+  "death_clip_ahead_seconds": 0,
+
+  "use_messagebox": true
 }

@@ -70,39 +70,57 @@
 ```
 
 #### 配置字段说明
-| 字段                    | 类型      | 说明                                                                       |
-|-----------------------|---------|--------------------------------------------------------------------------|
-| `player`              | Object  | 玩家信息                                                                     |
-| `player.name`         | String  | Minecraft 游戏昵称                                                           |
-| `player.uuid`         | String  | 玩家 UUID(不要带'-')，可以从这里查：<br/>https://mcsrranked.com/api/users/{your_name} |
-| `clip_setting`        | Object  | 视频切片规则                                                                   |
-| `upload_setting`      | Object  | 视频上传规则                                                                   |
-| `max_time`            | Number  | 最大允许时长（毫秒）                                                               |
-| `seed_type`           | Array   | 有效主世界类型白名单                                                               |
-| `bastion_type`        | Array   | 有效猪堡类型白名单                                                                |
-| `base_dir`            | String  | 工作目录路径                                                                   |
-| `host`                | String  | OBS websocket 主机地址                                                       |
-| `port`                | Number  | OBS websocket 端口                                                         |
-| `browser_executable`  | String  | Chromium 浏览器路径，注意用正斜杠'/'，而不是反斜杠'\\'                                      |
-| `use_cover`           | Boolean | 是否生成视频封面                                                                 |
-| `extra_seconds`       | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `比赛时间 + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大          |
-| `replay_prefix`       | String  | 回放文件名前缀，在OBS设置-录制-高级中可以修改                                                |
-| `replay_suffix`       | String  | 回放文件名后缀，在OBS设置-录制-高级中可以修改                                                |
-| `filename_formatting` | String  | 文件名格式，在OBS设置-录制-高级中可以修改                                                  |
-| `output_format`       | String  | 剪辑后的视频格式，请与录像格式保持一致，否则剪辑时可能出现问题，在OBS设置-输出-录制-录像格式中可以修改                   |
+| 字段                         | 类型      | 说明                                                                       |
+|----------------------------|---------|--------------------------------------------------------------------------|
+| `player`                   | Object  | 玩家信息                                                                     |
+| `player.name`              | String  | Minecraft 游戏昵称                                                           |
+| `player.uuid`              | String  | 玩家 UUID(不要带'-')，可以从这里查：<br/>https://mcsrranked.com/api/users/{your_name} |
+| `clip_setting`             | Object  | 视频切片规则                                                                   |
+| `upload_setting`           | Object  | 视频上传规则                                                                   |
+| `max_time`                 | Number  | 最大允许时长（毫秒）                                                               |
+| `seed_type`                | Array   | 有效主世界类型白名单                                                               |
+| `bastion_type`             | Array   | 有效猪堡类型白名单                                                                |
+| `base_dir`                 | String  | 工作目录路径                                                                   |
+| `host`                     | String  | OBS websocket 主机地址                                                       |
+| `port`                     | Number  | OBS websocket 端口                                                         |
+| `browser_executable`       | String  | Chromium 浏览器路径，注意用正斜杠'/'，而不是反斜杠'\\'                                      |
+| `use_cover`                | Boolean | 是否生成视频封面                                                                 |
+| `extra_seconds`            | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `比赛时间 + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大          |
+| `replay_prefix`            | String  | 回放文件名前缀，在OBS设置-录制-高级中可以修改                                                |
+| `replay_suffix`            | String  | 回放文件名后缀，在OBS设置-录制-高级中可以修改                                                |
+| `filename_formatting`      | String  | 文件名格式，在OBS设置-录制-高级中可以修改                                                  |
+| `output_format`            | String  | 剪辑后的视频格式，请与录像格式保持一致，否则剪辑时可能出现问题，在OBS设置-输出-录制-录像格式中可以修改                   |
+| `replay_threshold_seconds` | Number  | 在该数值范围内的录像请求都会共用同一个原始文件                                                  |
+| `clean_raw_file`           | Boolean | 是否要清理原始文件                                                                |
+| `use_death_clip`           | Boolean | 是否启用死亡切片                                                                 |
+| `death_clip_duration`      | Number  | 死亡切片时长（秒）                                                                |
+| `death_clip_ahead_seconds` | Number  | 切片开始，提前的时间量                                                              |
+| `use_messagebox`           | Bool    | 上传成功或失败的时候是否需要消息框提示                                                      |
 
  - `clip_setting` 和 `upload_setting` 中的字段是相互对应的
  - 其中，`upload_setting.***.max_time` 一定是小于等于 `clip_setting.***.max_time` 的，否则没有意义（有切片才能上传对吧）
 
+#### 文件说明
+ - `./scripts/concat.bat` 是用于合并所有死亡切片的脚本，将他放到视频的同级目录下(YYYYMMDD/中，文件夹需要包含filelist.txt)，双击运行，会产生`output.mp4`
+
 ### 3. 目录结构
+项目启动后。会在目录中产生
+- `mcsr`文件夹，存储所有 any% 速通比赛视频及相关素材。在这个文件夹中，视频会根据日期进行分类。对于切片的视频，产生`match[<比赛ID>].mp4`文件。对于投稿的视频，除了会有切片好的视频外，还会有`cover match[<比赛ID>].jpg`（封面）  `BG_match[<比赛ID>].jpg`（封面背景图）
+- `death_clip`文件夹，用于存储所有死亡切片。在这个文件夹中，视频会根据日期进行分类。只切片不上传。产生`match[<比赛ID>]<时间节点>.mp4`文件。同时同目录下还会产生`filelist.txt`文件，这是用于合并所有切片用到的文件，不要乱动。
+- `up_history.json`上传记录
 ```
 工作目录/
-├── biliup.exe         # 上传工具
-├── mcsr/              # 视频存储
-│   └── YYYYMMDD/      # 按日期分类
-│       ├── match[***].mp4  
-│       └── cover match[***].jpg  
-└── up_history.json    # 上传记录
+├── biliup.exe             # 上传工具
+├── mcsr/                  # 视频存储
+│   └── YYYYMMDD/          # 按日期分类
+│       ├── match[<比赛ID>].mp4  
+│       ├── BG_match[<比赛ID>].jpg 
+│       └── cover match[<比赛ID>].jpg  
+├── death_clip/            # 死亡切片
+│   └── YYYYMMDD/          # 按日期分类
+│       ├── match[<比赛ID>]<时间节点>.mp4  
+│       └── filelist.txt   # 视频列表，用于快速合并视频
+└── up_history.json        # 上传记录
 ```
 
 ## 功能特性
@@ -110,6 +128,7 @@
 - **封面生成**：利用 Chromium 自动生成视频封面
 - **视频上传**：利用 biliup 自动上传视频
 - **历史记录**：`up_history.json` 记录上传信息
+- **死亡切片**：根据比赛timeline信息自动生成死亡切片
 
 
 ## 注意事项

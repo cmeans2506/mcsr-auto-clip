@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5552e623-d722-49da-b13a-95c150305097" name="更改" comment="解决玩家信息获取错误的问题">
+    <list default="true" id="5552e623-d722-49da-b13a-95c150305097" name="更改" comment="新增死亡切片功能">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ranked_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ranked_service.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -36,23 +35,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.bilibili_uploader.executor&quot;: &quot;Run&quot;,
-    &quot;Python.config.executor&quot;: &quot;Run&quot;,
-    &quot;Python.cover_generator.executor&quot;: &quot;Run&quot;,
-    &quot;Python.ffmpeg_service.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.obs_controller.executor&quot;: &quot;Run&quot;,
-    &quot;Python.ranked_service.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.bilibili_uploader.executor": "Run",
+    "Python.config.executor": "Run",
+    "Python.cover_generator.executor": "Debug",
+    "Python.ffmpeg_service.executor": "Run",
+    "Python.main.executor": "Debug",
+    "Python.obs_controller.executor": "Run",
+    "Python.ranked_service.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
-  <component name="RunManager" selected="Python.ranked_service">
+}]]></component>
+  <component name="RunManager" selected="Python.cover_generator">
     <configuration name="bilibili_uploader" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="auto_clip" />
       <option name="ENV_FILES" value="" />
@@ -165,6 +164,8 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.cover_generator" />
+        <item itemvalue="Python.main" />
         <item itemvalue="Python.ranked_service" />
       </list>
     </recent_temporary>
@@ -234,7 +235,23 @@
       <option name="project" value="LOCAL" />
       <updated>1744536659760</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="解决了上传时阻塞的问题">
+      <option name="closed" value="true" />
+      <created>1744599258131</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1744599258131</updated>
+    </task>
+    <task id="LOCAL-00008" summary="新增死亡切片功能">
+      <option name="closed" value="true" />
+      <created>1744626706070</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1744626706070</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -254,6 +271,19 @@
     <MESSAGE value="笔误改正" />
     <MESSAGE value="修复录像格式问题" />
     <MESSAGE value="解决玩家信息获取错误的问题" />
-    <option name="LAST_COMMIT_MESSAGE" value="解决玩家信息获取错误的问题" />
+    <MESSAGE value="解决了上传时阻塞的问题" />
+    <MESSAGE value="新增死亡切片功能" />
+    <option name="LAST_COMMIT_MESSAGE" value="新增死亡切片功能" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/cover_generator.py</url>
+          <line>77</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

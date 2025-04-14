@@ -2,7 +2,7 @@ from pathlib import Path
 import subprocess
 import json
 from dataclasses import dataclass
-from ranked_service import MatchInfo, MatchType
+from ranked_service import MatchInfo, MatchType, MatchData
 from config import config
 import shutil
 
@@ -78,6 +78,42 @@ class FfmpegService:
         subprocess.run(cmd, capture_output=True)
         print(f"已生成切片{output_file_path}")
         return output_file_path
+
+
+    @staticmethod
+    def death_clip(match_data: MatchData, video_path: Path) -> list[Path]:
+        def is_death_timeline(timeline: MatchData.Timeline) -> bool:
+            return timeline.type_ == "projectelo.timeline.death" and timeline.uuid == config.player.uuid
+
+        file_list = []
+        if (config.death_clip_dir / "filelist.txt").exists():
+            with open(config.death_clip_dir / "filelist.txt", "r") as _filelist:
+                file_list = _filelist.readlines()
+
+        death_timeline_list = filter(is_death_timeline, match_data.timelines)
+
+        ret: list[Path] = []
+
+        for death_timeline in death_timeline_list:
+            sseof_seconds = match_data.result.time // 1000 - death_timeline.time // 1000 + config.death_clip_duration + config.death_clip_ahead_seconds
+            output_file_path = config.death_clip_dir / f"match[{match_data.id_}]{death_timeline.time}.{config.output_format}"
+            cmd = [
+                "ffmpeg",
+                "-sseof", f"-{sseof_seconds}",
+                "-t", str(config.death_clip_duration),
+                "-i", video_path,
+                "-c", "copy",
+                "-avoid_negative_ts", "1",
+                str(output_file_path)
+            ]
+            subprocess.run(cmd, capture_output=True)
+            print(f"已生成死亡切片{output_file_path}")
+            ret.append(output_file_path)
+            file_list.append(f"file '{output_file_path.name}'\n")
+
+        with open(config.death_clip_dir / "filelist.txt", "w") as _filelist:
+            _filelist.writelines(file_list)
+        return ret
 
     @staticmethod
     def screenshot(video_path: Path, ss: int, output_path: Path):
