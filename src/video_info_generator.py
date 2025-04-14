@@ -30,10 +30,11 @@ class VideoInfoGenerator:
 
     def _generate_video_title(self) -> str:
         title = f"RANKED {util.ts_to_str(self._match_data.result.time)}"
-        if self._match_data.result.time <= self._user_data.statistics.total.bestTime.ranked:
+        if (self._match_data.result.time <= self._user_data.statistics.total.bestTime.ranked
+                and self._match_data.type_ == MatchType.RANKED_MATCH):
             title += " 个人最佳"
         if self._match_data.type_ == MatchType.PRIVATE_ROOM_MATCH:
-            title += "私人房间"
+            title += " 私人房间"
         title += f" {translator.seedtype_map[self._match_data.seedType]} {translator.bastion_map[self._match_data.bastionType]}"
         return title
 

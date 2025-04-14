@@ -40,7 +40,7 @@ class OBSController:
                     date_time_str = date_time_str[:-len(config.replay_suffix)]
                 file_time = datetime.strptime(date_time_str, config.filename_formatting)
                 current_time = datetime.now()
-                return current_time - file_time <= timedelta(minutes=1)
+                return current_time - file_time <= timedelta(seconds=30)
             except (IndexError, ValueError):
                 # 如果文件名格式错误，返回 False
                 return False

@@ -7,6 +7,8 @@ from pathlib import Path
 from video_info_generator import VideoInfoGenerator
 import re
 from datetime import  datetime
+import threading
+from tkinter import messagebox
 
 
 class BilibiliUploader:
@@ -20,6 +22,7 @@ class BilibiliUploader:
 
     def __init__(self):
         self._biliup_path: Path = config.base_dir / "biliup.exe"
+        self._lock = threading.Lock()
         try:
             self._check()
         except Exception as e:
@@ -61,7 +64,7 @@ class BilibiliUploader:
             json.dump(history_data, up_history_file, indent=4)
 
 
-    def upload(self, video_info: VideoInfoGenerator.VideoInfo):
+    def _upload_task(self, video_info: VideoInfoGenerator.VideoInfo):
         cmd = [
             str(self._biliup_path),
             "upload",
@@ -74,26 +77,36 @@ class BilibiliUploader:
             str(video_info.video_path),
         ]
         print(f"uploading: {video_info.video_title}")
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", cwd=config.base_dir)
-        if result.returncode != 0:
-            print("文件上传失败，请检查！")
-            print("标准错误:", result.stderr)
-            input()
+        try:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", cwd=config.base_dir)
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             return
         aid, bvid = BilibiliUploader._parse_aid_bvid(result.stdout)
+        messagebox.showinfo("文件上传成功！", f"<{video_info.video_title}>文件已经上传至{bvid}")
         print(f"<{video_info.video_title}>文件已经上传至{bvid}")
 
-        self._upload_history_list.append(
-            BilibiliUploader.UploadHistoryInfo(
-                id=video_info.match_data.id_,
-                type="RANKED",
-                aid=aid,
-                bvid=bvid,
-                title=video_info.video_title,
-                upload_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with self._lock:
+            self._upload_history_list.append(
+                BilibiliUploader.UploadHistoryInfo(
+                    id=video_info.match_data.id_,
+                    type="RANKED",
+                    aid=aid,
+                    bvid=bvid,
+                    title=video_info.video_title,
+                    upload_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                )
             )
+            self._write_back()
+
+    def upload(self, video_info: VideoInfoGenerator.VideoInfo):
+        thread = threading.Thread(
+            target=self._upload_task,
+            args=(video_info,),
+            name=f"Upload-{video_info.video_title}",
+            daemon=True
         )
-        self._write_back()
+        thread.start()
 
 bilibili_uploader = BilibiliUploader()
 if __name__ == "__main__":
