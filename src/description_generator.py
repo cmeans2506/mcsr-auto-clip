@@ -84,7 +84,9 @@ elo排名：{self._user_data.eloRank}
 
 
     def _generate_upload_reason(self):
-        upload_reason = f"①sub{config.upload_setting[self._match_data.type_.name].max_time // (60 * 1000)}"
+        minutes = config.upload_setting[self._match_data.type_.name].max_time // (60 * 1000)
+        seconds = config.upload_setting[self._match_data.type_.name].max_time // 1000 % 60
+        upload_reason = f"①sub{minutes}{seconds}"
         return upload_reason
 
 
@@ -101,7 +103,7 @@ elo排名：{self._user_data.eloRank}
 文件大小：{int(self._video_info.size / (1024 * 1024))}MB"""
 
     def _generate_repository_info(self):
-        return"""MCSR AUTO CLIP by @-Cmeans- 
+        return """MCSR AUTO CLIP by @-Cmeans- (https://b23.tv/VyvEo6u) 
 开源地址：https://github.com/cmeans2506/mcsr-auto-clip
 """
 

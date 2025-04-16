@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, computed_field, ValidationError
 import time
 from pathlib import Path
 from datetime import datetime
+import shutil
 
 class Config(BaseModel):
     class MatchSetting(BaseModel):
@@ -52,6 +53,9 @@ class Config(BaseModel):
     def death_clip_dir(self) -> Path:
         path = self.base_dir / "death_clip" / datetime.now().strftime("%Y%m%d")
         path.mkdir(parents=True, exist_ok=True)
+
+        if not (path / "concat.bat").exists():
+            shutil.copy(Path(__file__).parent.parent / "scripts" / "concat.bat", path)
         return path
 
     @computed_field
