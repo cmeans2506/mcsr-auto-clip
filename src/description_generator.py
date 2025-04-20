@@ -84,9 +84,7 @@ elo排名：{self._user_data.eloRank}
 
 
     def _generate_upload_reason(self):
-        minutes = config.upload_setting[self._match_data.type_.name].max_time // (60 * 1000)
-        seconds = config.upload_setting[self._match_data.type_.name].max_time // 1000 % 60
-        upload_reason = f"①sub{minutes}{seconds}"
+        upload_reason = f"①sub{util.ts_to_str(config.upload_setting[self._match_data.type_.name].max_time)}"
         return upload_reason
 
 
@@ -108,7 +106,8 @@ elo排名：{self._user_data.eloRank}
 """
 
     def generate_video_desc(self):
-        return f"""{'大会员请开4K' if self._video_info.height > 1600 else ''}
+        return f"""本视频为自动投稿
+{'大会员请开4K' if self._video_info.height > 1600 else ''}
 
 ■ 分段详情：
 {self._generate_timelines_info()}

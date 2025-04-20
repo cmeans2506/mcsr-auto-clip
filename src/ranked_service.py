@@ -52,8 +52,8 @@ class MatchInfo(BaseModel):
     id_: int = Field(alias='id')
     type_: MatchType = Field(alias='type')
     seed: Seed
-    category: str
-    gameMode: str
+    category: Optional[str]
+    gameMode: Optional[str] = None
     players: list[Player]
     spectators: list[Player]
     result: Result
@@ -63,8 +63,8 @@ class MatchInfo(BaseModel):
     changes: list[Change]
     season: int
     date: int
-    seedType: str
-    bastionType: str
+    seedType: Optional[str]
+    bastionType: Optional[str]
     tag: Optional[str] = None
 
     def get_opponent_info(self) -> Player:
