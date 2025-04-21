@@ -36,8 +36,8 @@ class Change(BaseModel):
 
 
 class Rank(BaseModel):
-    season: Optional[str] = None
-    allTime: Optional[str] = None
+    season: Optional[int] = None
+    allTime: Optional[int] = None
 
 class MatchType(Enum):
     CASUAL_MATCH = 1
