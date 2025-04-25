@@ -10,7 +10,7 @@ class Seed(BaseModel):
     # 使用未筛选的种子，以下字段都为null或[]
     id_: Optional[str] = Field(alias='id')
     overworld: Optional[str]
-    bastion: Optional[str]
+    nether: Optional[str]
     endTowers: Optional[list[int]]
     variations: Optional[list[str]]
 
