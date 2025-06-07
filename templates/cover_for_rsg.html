@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>cover for rsg</title>
+    <style>
+        @font-face {
+            font-family: 'JiangChengLvDongHei';
+            src: url('{{font_path}}') format('truetype');
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'JiangChengLvDongHei';
+        }
+
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('{{bg_path}}') no-repeat center center/cover;
+            filter: blur(10px);
+            z-index: -2;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0) 20%, rgba(0, 0, 0, 1) 100%, rgba(0, 0, 0, 1)) 100%;
+            z-index: -1;
+        }
+
+        .content {
+            position: relative;
+            z-index: 0;
+            color: white;
+            text-align: left;
+            padding: 8% 9%;
+            display: flex;
+            flex-direction: column;
+            color: #fff;
+            font-size: 150px;
+
+            {% if world_data.data.finish %}
+            text-shadow: 0 0 10px rgba(0, 0, 255, 0.8),
+            0 0 20px rgba(0, 0, 255, 0.6);
+            {% else %}
+            text-shadow: 0 0 10px rgba(148, 0, 211, 0.8),
+            0 0 20px rgba(148, 0, 211, 0.6);
+            {% endif %}
+        }
+
+        .content p {
+            margin: 2% 0;
+        }
+
+        .corner-image-container {
+            position: fixed;
+            top: 50%;
+            right: 9%;
+            transform: translateY(-50%);
+            text-align: center;
+            z-index: 1;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .corner-image {
+            {% if is_bigger_image %}
+            width: 350px;
+            height: 350px;
+            padding: 40px;
+            {% else %}
+            width: 400px;
+            height: 400px;
+            {% endif %}
+
+            border-radius: 10px;
+            filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8));
+        }
+
+        .corner-caption {
+            margin-top: -30px;
+            font-size: 100px;
+            color: black;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+<div class="background"></div>
+<div class="overlay"></div>
+
+<div class="content">
+    {% for event_str in event_str_list %}
+    <p>{{event_str}}</p>
+    {% endfor %}
+</div>
+<div class="corner-image-container">
+    <img class="corner-image" src="{{corner_image_src}}" alt="Corner Image"/>
+    <div class="corner-caption">
+        world id<br/>[{{world_data.data.id}}]
+        {% if points %}
+        <br/>{{ points }} pts
+        {%endif%}
+    </div>
+</div>
+</body>
+
+</html>

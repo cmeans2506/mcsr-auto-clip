@@ -1,12 +1,13 @@
 from typing import Optional
 from jinja2 import Template
 import shutil
-from config import config
 from html2image import Html2Image
-from ffmpeg_service import ffmpeg_service
 from pathlib import Path
-from ranked_service import MatchInfo, ranked_service
+
+from ranked.ranked_service import MatchInfo, ranked_service
 import util
+from config import config
+from ffmpeg_service import ffmpeg_service
 
 
 class CoverGenerator:
@@ -67,6 +68,8 @@ class CoverGenerator:
             result_time=util.ts_to_str(match_info.result.time)
         )
         save_as = f'cover match[{match_info.id_}].jpg'
+        with open(config.video_dir / f'cover match[{match_info.id_}].html', 'w', encoding="utf8") as html_file:
+            html_file.write(html_content)
         ret = self._hti.screenshot(html_str=html_content, save_as=save_as)
         print(f"封面已生成至{ret[0]}")
 

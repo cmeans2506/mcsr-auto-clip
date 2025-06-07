@@ -5,18 +5,24 @@ from datetime import datetime
 import shutil
 
 class Config(BaseModel):
-    class MatchSetting(BaseModel):
-        max_time: int
-        seed_type: list[str]
-        bastion_type: list[str]
+
 
     class Player(BaseModel):
         name: str
         uuid: str
 
+    class Setting(BaseModel):
+        class MatchSetting(BaseModel):
+            max_time: int
+            seed_type: list[str]
+            bastion_type: list[str]
+
+        ranked: dict[str, MatchSetting]
+        rsg: dict[str, int]
+
     player: Player
-    clip_setting: dict[str, MatchSetting]
-    upload_setting: dict[str, MatchSetting]
+    clip_setting: Setting
+    upload_setting: Setting
     launch_time: float = Field(default_factory=time.time)
     base_dir: Path
 

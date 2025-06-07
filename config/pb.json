@@ -1,0 +1,26 @@
+{
+    "rsg.first_portal": {
+        "id": 925001,
+        "igt": 401694,
+        "bvid": "BV18r66YBEbu",
+        "time": 1735825926
+    },
+    "rsg.enter_stronghold": {
+        "id": 925001,
+        "igt": 479897,
+        "bvid": "BV18r66YBEbu",
+        "time": 1735825926
+    },
+    "rsg.enter_end": {
+        "id": 925001,
+        "igt": 585666,
+        "bvid": "BV18r66YBEbu",
+        "time": 1735825926
+    },
+    "rsg.credits": {
+        "id": 925001,
+        "igt": 645258,
+        "bvid": "BV18r66YBEbu",
+        "time": 1735825926
+    }
+}

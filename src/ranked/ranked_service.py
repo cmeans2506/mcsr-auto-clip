@@ -2,8 +2,9 @@ from typing import Optional
 from pydantic import BaseModel, Field
 import requests
 from enum import Enum
+
 from config import config
-import util
+import util as util
 
 
 class Seed(BaseModel):
@@ -71,6 +72,15 @@ class MatchInfo(BaseModel):
         return next(filter(lambda player_info: player_info.uuid != config.player.uuid, self.players), None)
     def get_my_info(self) -> Player:
         return next(filter(lambda player_info: player_info.uuid == config.player.uuid, self.players), None)
+
+    def is_valid_for_upload(self) -> bool:
+        if self.result.time > config.upload_setting.ranked[self.type_.name].max_time:
+            return False
+        if self.bastionType not in config.upload_setting.ranked[self.type_.name].bastion_type:
+            return False
+        if self.seedType not in config.upload_setting.ranked[self.type_.name].seed_type:
+            return False
+        return True
 
 
 class UserData(BaseModel):
@@ -216,7 +226,8 @@ class RankedService:
         try:
             data = requests.get(api).json()
         except requests.exceptions.RequestException as e:
-            print(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+            if e.request:
+                print(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
             return []
         if data["status"] != "success":
             raise RuntimeError(data["data"])
@@ -240,17 +251,17 @@ class RankedService:
         if latest_match.forfeited or latest_match.decayed:
             print("不是完整比赛，跳过")
             return None
-        if latest_match.result.time > config.clip_setting[latest_match.type_.name].max_time:
+        if latest_match.result.time > config.clip_setting.ranked[latest_match.type_.name].max_time:
             print(f"比赛的完成时间{util.ts_to_str(latest_match.result.time)}超过了最大允许时间"
-                  f"{util.ts_to_str(config.clip_setting[latest_match.type_.name].max_time)}，跳过")
+                  f"{util.ts_to_str(config.clip_setting.ranked[latest_match.type_.name].max_time)}，跳过")
             return None
-        if latest_match.bastionType not in config.clip_setting[latest_match.type_.name].bastion_type:
+        if latest_match.bastionType not in config.clip_setting.ranked[latest_match.type_.name].bastion_type:
             print(f"比赛的猪堡类型是{latest_match.bastionType}，不在指定的范围内："
-                  f"{config.clip_setting[latest_match.type_.name].bastion_type}，跳过")
+                  f"{config.clip_setting.ranked[latest_match.type_.name].bastion_type}，跳过")
             return None
-        if latest_match.seedType not in config.clip_setting[latest_match.type_.name].seed_type:
+        if latest_match.seedType not in config.clip_setting.ranked[latest_match.type_.name].seed_type:
             print(f"比赛的主世界类型是{latest_match.seedType}，不在指定的范围内："
-                  f"{config.clip_setting[latest_match.type_.name].seed_type}，跳过")
+                  f"{config.clip_setting.ranked[latest_match.type_.name].seed_type}，跳过")
             return None
         if latest_match.category != "ANY":
             print(f"比赛的项目是{latest_match.category}，不是ANY%速通，跳过")

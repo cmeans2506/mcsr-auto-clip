@@ -3,48 +3,114 @@
     "name": "Cmeans",
     "uuid": "3affdb407396456abcca42dbeb102331"
   },
-  "clip_setting":{
-    "CASUAL_MATCH": {
-      "max_time": 0,
-      "seed_type": [],
-      "bastion_type": []
+  "clip_setting": {
+    "ranked": {
+      "CASUAL_MATCH": {
+        "max_time": 0,
+        "seed_type": [],
+        "bastion_type": []
+      },
+      "RANKED_MATCH": {
+        "max_time": 720000,
+        "seed_type": [
+          "BURIED_TREASURE",
+          "SHIPWRECK",
+          "VILLAGE",
+          "DESERT_TEMPLE",
+          "RUINED_PORTAL"
+        ],
+        "bastion_type": [
+          "BRIDGE",
+          "STABLES",
+          "HOUSING",
+          "TREASURE"
+        ]
+      },
+      "PRIVATE_ROOM_MATCH": {
+        "max_time": 660000,
+        "seed_type": [
+          "BURIED_TREASURE",
+          "SHIPWRECK",
+          "VILLAGE",
+          "DESERT_TEMPLE",
+          "RUINED_PORTAL"
+        ],
+        "bastion_type": [
+          "BRIDGE",
+          "STABLES",
+          "HOUSING",
+          "TREASURE"
+        ]
+      },
+      "EVNET_MODE_MATCH": {
+        "max_time": 0,
+        "seed_type": [],
+        "bastion_type": []
+      }
     },
-    "RANKED_MATCH": {
-      "max_time": 900000,
-      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
-      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
-    },
-    "PRIVATE_ROOM_MATCH": {
-      "max_time": 660000,
-      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
-      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
-    },
-    "EVNET_MODE_MATCH": {
-      "max_time": 0,
-      "seed_type": [],
-      "bastion_type": []
+    "rsg": {
+      "rsg.enter_nether": 0,
+      "rsg.enter_bastion": 0,
+      "rsg.enter_fortress": 0,
+      "rsg.first_portal": 540000,
+      "rsg.enter_stronghold": 660000,
+      "rsg.enter_end": 720000,
+      "rsg.credits": 900000
     }
   },
   "upload_setting": {
-    "CASUAL_MATCH": {
-      "max_time": 0,
-      "seed_type": [],
-      "bastion_type": []
+    "ranked": {
+      "CASUAL_MATCH": {
+        "max_time": 0,
+        "seed_type": [],
+        "bastion_type": []
+      },
+      "RANKED_MATCH": {
+        "max_time": 660000,
+        "seed_type": [
+          "BURIED_TREASURE",
+          "SHIPWRECK",
+          "VILLAGE",
+          "DESERT_TEMPLE",
+          "RUINED_PORTAL"
+        ],
+        "bastion_type": [
+          "BRIDGE",
+          "STABLES",
+          "HOUSING",
+          "TREASURE"
+        ]
+      },
+      "PRIVATE_ROOM_MATCH": {
+        "max_time": 600000,
+        "seed_type": [
+          "BURIED_TREASURE",
+          "SHIPWRECK",
+          "VILLAGE",
+          "DESERT_TEMPLE",
+          "RUINED_PORTAL"
+        ],
+        "bastion_type": [
+          "BRIDGE",
+          "STABLES",
+          "HOUSING",
+          "TREASURE"
+        ]
+      },
+      "EVNET_MODE_MATCH": {
+        "max_time": 0,
+        "seed_type": [],
+        "bastion_type": []
+      }
     },
-    "RANKED_MATCH": {
-      "max_time": 900000,
-      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
-      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
-    },
-    "PRIVATE_ROOM_MATCH": {
-      "max_time": 600000,
-      "seed_type": ["BURIED_TREASURE", "SHIPWRECK", "VILLAGE", "DESERT_TEMPLE", "RUINED_PORTAL"],
-      "bastion_type": ["BRIDGE", "STABLES", "HOUSING", "TREASURE"]
-    },
-    "EVNET_MODE_MATCH": {
-      "max_time": 0,
-      "seed_type": [],
-      "bastion_type": []
+    "rsg": {
+      "rsg.enter_nether": 0,
+      "rsg.enter_bastion": 0,
+      "rsg.enter_fortress": 0,
+      "rsg.first_portal": 480000,
+      "rsg.enter_stronghold": 600000,
+      "rsg.enter_end": 660000,
+      "rsg.credits": 840000
     }
   },
   "base_dir": "D:/视频",

@@ -1,12 +1,12 @@
 {
   "event_map": {
-    "nether": "进地狱",
-    "bastion": "猪堡",
-    "fortress": "下界要塞",
-    "first_portal": "盲传",
-    "stronghold": "隔墙有眼",
-    "end": "末地",
-    "finish": "结束"
+    "rsg.enter_nether": "进地狱",
+    "rsg.enter_bastion": "猪堡",
+    "rsg.enter_fortress": "下界要塞",
+    "rsg.first_portal": "盲传",
+    "rsg.enter_stronghold": "隔墙有眼",
+    "rsg.enter_end": "末地",
+    "rsg.credits": "结束"
   },
   "timeline_map": {
     "story.enter_the_nether": "勇往直下",

@@ -1,10 +1,11 @@
-from ranked_service import UserData, MatchData
 from pathlib import Path
+from datetime import datetime
+
 from config import config
 from translator import translator
-from datetime import datetime
 import util
 from ffmpeg_service import ffmpeg_service
+from ranked.ranked_service import UserData, MatchData
 
 class DescriptionGenerator:
     def __init__(self, match_data: MatchData, user_data: UserData, video_path: Path):
@@ -84,7 +85,7 @@ elo排名：{self._user_data.eloRank}
 
 
     def _generate_upload_reason(self):
-        upload_reason = f"①sub{util.ts_to_str(config.upload_setting[self._match_data.type_.name].max_time)}"
+        upload_reason = f"①sub{util.ts_to_str(config.upload_setting.ranked[self._match_data.type_.name].max_time)}"
         return upload_reason
 
 
@@ -106,7 +107,7 @@ elo排名：{self._user_data.eloRank}
 """
 
     def generate_video_desc(self):
-        return f"""本视频为自动投稿
+        desc = f"""本视频为自动投稿
 {'大会员请开4K' if self._video_info.height > 1600 else ''}
 
 ■ 分段详情：
@@ -130,3 +131,6 @@ elo排名：{self._user_data.eloRank}
 ■ 项目信息：
 {self._generate_repository_info()}
 """
+        with open(config.video_dir / f'desc match[{self._match_data.id_}].txt', 'w', encoding="utf8") as desc_file:
+            desc_file.write(desc)
+        return desc

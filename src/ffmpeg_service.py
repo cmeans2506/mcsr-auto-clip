@@ -2,9 +2,12 @@ from pathlib import Path
 import subprocess
 import json
 from dataclasses import dataclass
-from ranked_service import MatchInfo, MatchType, MatchData
+from rsg.paceman_service import LiveRunData, WorldData
 from config import config
 import shutil
+
+
+from ranked.ranked_service import MatchInfo, MatchType, MatchData
 
 class FfmpegService:
     @dataclass
@@ -14,6 +17,7 @@ class FfmpegService:
         size: float
         bit_rate: int
         frame_rate: float
+        codec_long_name: str
 
     def __init__(self):
         try:
@@ -40,10 +44,9 @@ class FfmpegService:
             "ffprobe",
             "-v", "error",  # 只输出错误信息
             "-select_streams", "v:0",  # 只选择第一个视频流
-            "-show_entries", "stream=width,height,r_frame_rate,bit_rate,duration",  # 选择需要的字段
+            "-show_entries", "stream=width,height,r_frame_rate,bit_rate,duration,codec_long_name",  # 选择需要的字段
             "-show_format",  # 获取文件格式信息
-            "-print_format",
-            "json",
+            "-print_format", "json",
             str(file_path)
         ]
         result = subprocess.run(command, stdout=subprocess.PIPE)
@@ -57,7 +60,8 @@ class FfmpegService:
             height=stream.get("height"),
             size=float(format_info.get("size", 0)),
             bit_rate=int(format_info.get("bit_rate", 0)), # 单位 bps
-            frame_rate=eval(stream.get("r_frame_rate", "0"))  # 转换帧率为浮点数
+            frame_rate=eval(stream.get("r_frame_rate", "0")),  # 转换帧率为浮点数
+            codec_long_name=stream.get("codec_long_name")
         )
 
 
@@ -130,6 +134,22 @@ class FfmpegService:
             ]
             ,capture_output=True
         )
+
+    @staticmethod
+    def rsg_cut(live_run: LiveRunData, world_data: WorldData, video_path: Path) -> Path:
+        sseof_seconds = live_run.rta + config.extra_seconds
+        output_file_path = config.video_dir / f"world[{world_data.data.id}].{config.output_format}"
+        cmd = [
+            "ffmpeg",
+            "-sseof", f"-{sseof_seconds}",
+            "-i", video_path,
+            "-c", "copy",
+            "-avoid_negative_ts", "1",
+            str(output_file_path)
+        ]
+        subprocess.run(cmd, capture_output=True)
+        print(f"已生成切片{output_file_path}")
+        return output_file_path
 
 
 

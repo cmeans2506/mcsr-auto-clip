@@ -1,17 +1,30 @@
 import shutil
-from config import config
 import subprocess
 from pydantic import BaseModel, Field
 import json
 from pathlib import Path
-from video_info_generator import VideoInfoGenerator
 import re
 from datetime import  datetime
 import threading
 from tkinter import messagebox
+from typing import Optional, Literal
+from dataclasses import dataclass
+
+import util
+from config import config
+
+@dataclass
+class UploadInfo:
+    id: int
+    type: Literal["RANKED", "RSG"]
+    cover_path: Optional[Path]
+    video_title: str
+    video_desc: str
+    video_tags: list[str]
+    video_path: Path
 
 
-class BilibiliUploader:
+class BiliUploader:
     class UploadHistoryInfo(BaseModel):
         id_: int = Field(alias='id')
         type_: str = Field(alias='type')
@@ -29,11 +42,11 @@ class BilibiliUploader:
             input(e.args[0])
             exit()
 
-        self._upload_history_list: list[BilibiliUploader.UploadHistoryInfo] = []
+        self._upload_history_list: list[BiliUploader.UploadHistoryInfo] = []
         self._up_history_path: Path = config.base_dir / "up_history.json"
         if self._up_history_path.exists():
             with open(self._up_history_path, "r", encoding="utf8") as up_history_file:
-                self._upload_history_list = [BilibiliUploader.UploadHistoryInfo(**up_history) for up_history in json.load(up_history_file)]
+                self._upload_history_list = [BiliUploader.UploadHistoryInfo(**up_history) for up_history in json.load(up_history_file)]
 
 
     def _check(self):
@@ -64,7 +77,7 @@ class BilibiliUploader:
             json.dump(history_data, up_history_file, indent=4)
 
 
-    def _upload_task(self, video_info: VideoInfoGenerator.VideoInfo):
+    def _upload_task(self, video_info: UploadInfo):
         cmd = [
             str(self._biliup_path),
             "upload",
@@ -84,16 +97,16 @@ class BilibiliUploader:
                 messagebox.showerror("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             print("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             return
-        aid, bvid = BilibiliUploader._parse_aid_bvid(result.stdout)
+        aid, bvid = BiliUploader._parse_aid_bvid(result.stdout)
         if config.use_messagebox:
             messagebox.showinfo("文件上传成功！", f"<{video_info.video_title}>文件已经上传至{bvid}")
         print(f"<{video_info.video_title}>文件已经上传至{bvid}")
 
         with self._lock:
             self._upload_history_list.append(
-                BilibiliUploader.UploadHistoryInfo(
-                    id=video_info.match_data.id_,
-                    type="RANKED",
+                BiliUploader.UploadHistoryInfo(
+                    id=video_info.id,
+                    type=video_info.type,
                     aid=aid,
                     bvid=bvid,
                     title=video_info.video_title,
@@ -102,7 +115,7 @@ class BilibiliUploader:
             )
             self._write_back()
 
-    def upload(self, video_info: VideoInfoGenerator.VideoInfo):
+    def upload(self, video_info: UploadInfo):
         thread = threading.Thread(
             target=self._upload_task,
             args=(video_info,),
@@ -111,6 +124,10 @@ class BilibiliUploader:
         )
         thread.start()
 
-bilibili_uploader = BilibiliUploader()
+    def get_upload_history_by_id(self, id_: int) -> Optional[UploadHistoryInfo]:
+        with self._lock:
+            return util.find_first(lambda u: u.id_ == id_, self._upload_history_list)
+
+bilibili_uploader = BiliUploader()
 if __name__ == "__main__":
     pass
