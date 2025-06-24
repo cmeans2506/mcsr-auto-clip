@@ -3,6 +3,7 @@ from pydantic import BaseModel, computed_field
 import requests
 import time
 
+import util
 from util import find_first
 from config import config
 
@@ -80,6 +81,17 @@ class LiveRunData(BaseModel):
             if event.igt < config.upload_setting.rsg[event.eventId]:
                 return True
         return False
+
+    def clean(self):
+        """
+        eventList 中存在 `rsg.second_portal` 这一项，我们不使用，将其清除
+        :return: None
+        """
+        if util.find_first(lambda e: e.eventId == 'rsg.second_portal', self.eventList) is None:
+            return
+        if self.eventList[-1].eventId == 'rsg.second_portal':
+            self.lastUpdated -= self.eventList[-1].rta - self.eventList[-2].rta
+        self.eventList = list(filter(lambda e: e.eventId != 'rsg.second_portal', self.eventList))
 """
 {
   "data": {
@@ -198,6 +210,8 @@ class PacemanService:
 
         if run is None:
             return None
+
+        run.clean()
 
         if not run.is_valid_for_clip():
             print(run, "不满足切片条件，跳过")

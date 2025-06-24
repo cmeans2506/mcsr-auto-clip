@@ -128,8 +128,34 @@
  - `clip_setting` 和 `upload_setting` 中的字段是相互对应的
  - 其中，`upload_setting` 中的最大允许时长一定是小于等于 `clip_setting` 中的最大允许时长，否则没有意义（有切片才能上传对吧）
 
-#### 文件说明
+---
+
  - `./scripts/concat.bat` 是用于合并所有死亡切片的脚本，将他放到视频的同级目录下(YYYYMMDD/中，文件夹需要包含filelist.txt)，双击运行，会产生`output.mp4`
+
+---
+
+ `./config/pb.json` 文件：
+存储你的pb信息
+```json
+{
+   "rsg.first_portal": {
+        "id": 0,
+        "igt": 1200000,
+        "bvid": "",
+        "time": 0
+   }
+   // 其他配置...
+}
+```
+
+#### 配置字段说明
+| 字段     | 类型     | 说明                 |
+|--------|--------|--------------------|
+| `id`   | int    | paceman中，本场速通的世界id |
+| `igt`  | int    | igt，单位毫秒，默认20分钟    |
+| `bvid` | String | 本次pb对应的视频          |
+| `time` | int    | 打出本次pb的时间，时间戳，单位秒  |
+
 
 ### 3. 目录结构
 项目启动后。会在目录中产生

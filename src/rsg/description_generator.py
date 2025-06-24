@@ -31,6 +31,8 @@ class DescriptionGenerator:
 
     def _generate_pb_info(self):
         def get_pb_str(key):
+            if not rsg_pb.pb_info[key].id:
+                return ""
             pb_time = datetime.fromtimestamp(rsg_pb.pb_info[key]['time']).strftime("%Y-%m-%d")
             pb_str = (f"·{translator.event_map[key]}\n{util.ts_to_str(rsg_pb.pb_info[key]['igt'])}"
                       f" | {pb_time}"
@@ -38,7 +40,7 @@ class DescriptionGenerator:
                       f" | 链接：{rsg_pb.pb_info[key]['bvid']}")
             return pb_str
 
-        return "\n".join(list(map(get_pb_str, rsg_pb.pb_info)))
+        return "\n".join(list(filter(None, map(get_pb_str, rsg_pb.pb_info))))
 
 
     def _generate_upload_reason(self):
@@ -93,7 +95,7 @@ class DescriptionGenerator:
 {self._generate_timelines_info()}
 
 ■ 个人最佳：
-{self._generate_pb_info()}
+{self._generate_pb_info() or "无"}
 
 ■ 投稿条件：
 {self._generate_upload_reason()}

@@ -9,16 +9,32 @@ from pydantic import BaseModel
 
 
 class Record(BaseModel):
-    id: int
-    igt: int
-    bvid: str
-    time: int
+    id: int = 0
+    igt: int = 1200000
+    bvid: str = ""
+    time: int = 0
 
+class RecordJsonSerilize(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Record): #如果序列化对象为datetime类型
+            return Record.model_dump(o, mode='json')
+        else:
+            return json.JSONEncoder.default(self, o)  #如果不是上述类型，就按照json默认序列化方式操作
 
 class RsgPb:
     def __init__(self):
-        with open(Path(__file__).parent.parent.parent / "config" / "pb.json", "r", encoding="utf8") as pb_file:
-            self.pb_info: dict[EventId, Record] = json.load(pb_file)
+        self.pb_info: dict[EventId, Record] = {
+            "rsg.first_portal": Record(),
+            "rsg.enter_stronghold": Record(),
+            "rsg.enter_end": Record(),
+            "rsg.credits": Record()
+        }
+        pb_file_path = Path(__file__).parent.parent.parent / "config" / "pb.json"
+        if pb_file_path.exists():
+            with open(Path(__file__).parent.parent.parent / "config" / "pb.json", "r", encoding="utf8") as pb_file:
+                self.pb_info: dict[EventId, Record] = json.load(pb_file)
+        else:
+            self.write_back()
 
     def is_pb(self, event: Event) -> bool:
         if self.pb_info.get(event.eventId) is None:
@@ -28,7 +44,7 @@ class RsgPb:
 
     def write_back(self):
         with open(Path(__file__).parent.parent.parent / "config" / "pb.json", "w", encoding="utf8") as pb_file:
-            json.dump(self.pb_info, pb_file, indent=4)
+            json.dump(self.pb_info, pb_file, indent=4, cls=RecordJsonSerilize)
 
     def check_for_pb(self, live_run: LiveRunData, world_data: WorldData):
         def job():
@@ -54,5 +70,5 @@ class RsgPb:
         )
         thread.start()
 
-rsg_pb = RsgPb()
 
+rsg_pb = RsgPb()

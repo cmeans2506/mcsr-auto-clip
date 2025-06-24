@@ -1,26 +1,26 @@
 {
     "rsg.first_portal": {
-        "id": 925001,
-        "igt": 401694,
-        "bvid": "BV18r66YBEbu",
-        "time": 1735825926
+        "id": 0,
+        "igt": 1200000,
+        "bvid": "",
+        "time": 0
     },
     "rsg.enter_stronghold": {
-        "id": 925001,
-        "igt": 479897,
-        "bvid": "BV18r66YBEbu",
-        "time": 1735825926
+        "id": 0,
+        "igt": 1200000,
+        "bvid": "",
+        "time": 0
     },
     "rsg.enter_end": {
-        "id": 925001,
-        "igt": 585666,
-        "bvid": "BV18r66YBEbu",
-        "time": 1735825926
+        "id": 0,
+        "igt": 1200000,
+        "bvid": "",
+        "time": 0
     },
     "rsg.credits": {
-        "id": 925001,
-        "igt": 645258,
-        "bvid": "BV18r66YBEbu",
-        "time": 1735825926
+        "id": 0,
+        "igt": 1200000,
+        "bvid": "",
+        "time": 0
     }
 }

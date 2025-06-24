@@ -52,7 +52,6 @@ class AutoClip:
         if live_run is None:
             return
 
-        live_run.eventList = list(filter(lambda e: e.eventId != 'rsg.second_portal', live_run.eventList))
         world_data = paceman_service.get_world(live_run.worldId)
 
         raw_video_path = obs_controller.replay_save()
