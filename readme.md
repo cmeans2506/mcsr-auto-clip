@@ -34,7 +34,7 @@
 - 在`./src` 文件夹下，运行 `pip install -r requirements.txt`
 
 #### ⑥运行
-- 运行 `python ./src/main.py`
+- 在`./src` 文件夹下，运行 `python ./main.py`
 
 ### 2. 配置文件说明
  `./config/config.json` 文件：
