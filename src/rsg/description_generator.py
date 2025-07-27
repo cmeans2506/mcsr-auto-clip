@@ -31,11 +31,11 @@ class DescriptionGenerator:
         def get_pb_str(key):
             if not rsg_pb.pb_info[key].id:
                 return ""
-            pb_time = datetime.fromtimestamp(rsg_pb.pb_info[key]['time']).strftime("%Y-%m-%d")
-            pb_str = (f"·{translator.event_map[key]}\n{util.ts_to_str(rsg_pb.pb_info[key]['igt'])}"
+            pb_time = datetime.fromtimestamp(rsg_pb.pb_info[key].time).strftime("%Y-%m-%d")
+            pb_str = (f"·{translator.event_map[key]}\n{util.ts_to_str(rsg_pb.pb_info[key].igt)}"
                       f" | {pb_time}"
-                      f" | 距今{int((time.time() - rsg_pb.pb_info[key]['time']) / (60 * 60 * 24))}天"
-                      f" | 链接：{rsg_pb.pb_info[key]['bvid']}")
+                      f" | 距今{int((time.time() - rsg_pb.pb_info[key].time) / (60 * 60 * 24))}天"
+                      f" | 链接：{rsg_pb.pb_info[key].bvid}")
             return pb_str
 
         return "\n".join(list(filter(None, map(get_pb_str, rsg_pb.pb_info))))
