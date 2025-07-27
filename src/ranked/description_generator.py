@@ -99,7 +99,8 @@ elo排名：{self._user_data.eloRank}
 高度：{self._video_info.height}
 帧率：{self._video_info.frame_rate}
 码率：{int(self._video_info.bit_rate / 1024)}kbps
-文件大小：{int(self._video_info.size / (1024 * 1024))}MB"""
+文件大小：{int(self._video_info.size / (1024 * 1024))}MB
+编码器类型：{self._video_info.codec_long_name}"""
 
     def _generate_repository_info(self):
         return """MCSR AUTO CLIP by @-Cmeans- (https://b23.tv/VyvEo6u) 

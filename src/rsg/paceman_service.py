@@ -1,4 +1,4 @@
-from typing import Optional, Literal
+from typing import Optional, Literal, Any
 from pydantic import BaseModel, computed_field
 import requests
 import time
@@ -79,8 +79,15 @@ class LiveRunData(BaseModel):
     def is_valid_for_upload(self) -> bool:
         for event in self.eventList:
             if event.igt < config.upload_setting.rsg[event.eventId]:
+                # 只进fort,不算
+                if event.eventId == 'rsg.enter_fortress':
+                    if util.find_first(lambda e: e.eventId == 'rsg.enter_bastion', self.eventList) is None:
+                        return False
                 return True
         return False
+
+    def model_post_init(self, context: Any, /) -> None:
+        self.clean()
 
     def clean(self):
         """
@@ -210,8 +217,6 @@ class PacemanService:
 
         if run is None:
             return None
-
-        run.clean()
 
         if not run.is_valid_for_clip():
             print(run, "不满足切片条件，跳过")

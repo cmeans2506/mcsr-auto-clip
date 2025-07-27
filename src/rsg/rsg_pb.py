@@ -16,7 +16,7 @@ class Record(BaseModel):
 
 class RecordJsonSerilize(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, Record): #如果序列化对象为datetime类型
+        if isinstance(o, Record):
             return Record.model_dump(o, mode='json')
         else:
             return json.JSONEncoder.default(self, o)  #如果不是上述类型，就按照json默认序列化方式操作
@@ -29,10 +29,14 @@ class RsgPb:
             "rsg.enter_end": Record(),
             "rsg.credits": Record()
         }
-        pb_file_path = Path(__file__).parent.parent.parent / "config" / "pb.json"
-        if pb_file_path.exists():
-            with open(Path(__file__).parent.parent.parent / "config" / "pb.json", "r", encoding="utf8") as pb_file:
-                self.pb_info: dict[EventId, Record] = json.load(pb_file)
+        self.pb_file_path = Path(__file__).parent.parent.parent / "config" / "pb.json"
+        if self.pb_file_path.exists():
+            with open(self.pb_file_path, "r", encoding="utf8") as pb_file:
+                raw_data= json.load(pb_file)
+                self.pb_info = {
+                    event_id: Record(**record_data)
+                    for event_id, record_data in raw_data.items()
+                }
         else:
             self.write_back()
 
@@ -40,10 +44,10 @@ class RsgPb:
         if self.pb_info.get(event.eventId) is None:
             return False
 
-        return event.igt < self.pb_info[event.eventId]['igt']
+        return event.igt < self.pb_info[event.eventId].igt
 
     def write_back(self):
-        with open(Path(__file__).parent.parent.parent / "config" / "pb.json", "w", encoding="utf8") as pb_file:
+        with open(self.pb_file_path, "w", encoding="utf8") as pb_file:
             json.dump(self.pb_info, pb_file, indent=4, cls=RecordJsonSerilize)
 
     def check_for_pb(self, live_run: LiveRunData, world_data: WorldData):
