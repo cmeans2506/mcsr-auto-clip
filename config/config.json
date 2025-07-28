@@ -121,6 +121,7 @@
   "browser_executable": "D:/Software/chrome-win/chrome.exe",
   "use_cover": true,
   "extra_seconds": 15,
+  "wait_for_datapack": 30,
   "replay_prefix": "Replay ",
   "replay_suffix": "",
   "output_format": "mp4",

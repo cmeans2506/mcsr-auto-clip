@@ -52,10 +52,14 @@ class AutoClip:
         if live_run is None:
             return
 
+        if live_run.is_complete_run():
+            print(f"本场rsg速通是完整速通，等待{config.wait_for_datapack}秒用于输入/datapack list和/seed等指令...")
+            time.sleep(config.wait_for_datapack)
+
         world_data = paceman_service.get_world(live_run.worldId)
 
         raw_video_path = obs_controller.replay_save()
-        print(f"[rsg any%切片]存储了比赛[{world_data.data.id}]的录像：{raw_video_path}")
+        print(f"[rsg any%切片]存储了世界[{world_data.data.id}]的录像：{raw_video_path}")
 
         cut_video_path = ffmpeg_service.rsg_cut(live_run=live_run, world_data=world_data, video_path=raw_video_path)
 

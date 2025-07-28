@@ -99,6 +99,9 @@ class LiveRunData(BaseModel):
         if self.eventList[-1].eventId == 'rsg.second_portal':
             self.lastUpdated -= self.eventList[-1].rta - self.eventList[-2].rta
         self.eventList = list(filter(lambda e: e.eventId != 'rsg.second_portal', self.eventList))
+
+    def is_complete_run(self) -> bool:
+        return util.find_first(lambda e: e.eventId == "rsg.credits", self.eventList) is not None
 """
 {
   "data": {

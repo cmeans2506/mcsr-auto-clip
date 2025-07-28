@@ -34,6 +34,7 @@ class Config(BaseModel):
     use_cover: bool
 
     extra_seconds: int
+    wait_for_datapack: int
     replay_prefix: str
     replay_suffix: str
     output_format: str

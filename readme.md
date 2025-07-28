@@ -74,7 +74,8 @@
 
   "browser_executable": "D:/Software/chrome-win/chrome.exe",
   "use_cover": true,
-  "extra_seconds": 15,
+  "extra_seconds": 15, 
+  "wait_for_datapack": 30,
   "replay_prefix": "Replay ",
   "replay_suffix": "",
   "output_format": "mp4",
@@ -113,7 +114,8 @@
 | `port`                           | Number  | OBS websocket 端口                                                         |
 | `browser_executable`             | String  | Chromium 浏览器路径，注意用正斜杠'/'，而不是反斜杠'\\'                                      |
 | `use_cover`                      | Boolean | 是否生成视频封面                                                                 |
-| `extra_seconds`                  | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大           |
+| `extra_seconds`                  | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大（秒）        |
+| `wait_for_datapack`              | Number  | rsg完成一场速通后，会等待一段时间再结束录像，期间可以输入种子、datapack list等。默认值为30（秒）                |
 | `replay_prefix`                  | String  | 回放文件名前缀，在OBS设置-录制-高级中可以修改                                                |
 | `replay_suffix`                  | String  | 回放文件名后缀，在OBS设置-录制-高级中可以修改                                                |
 | `filename_formatting`            | String  | 文件名格式，在OBS设置-录制-高级中可以修改                                                  |
