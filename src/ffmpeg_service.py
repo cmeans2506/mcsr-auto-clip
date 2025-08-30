@@ -75,6 +75,7 @@ class FfmpegService:
             "ffmpeg",
             "-sseof", f"-{sseof_seconds}",
             "-i", video_path,
+            "-map", "0",
             "-c", "copy",
             "-avoid_negative_ts", "1",
             str(output_file_path)
@@ -106,6 +107,7 @@ class FfmpegService:
                 "-sseof", f"-{sseof_seconds}",
                 "-t", str(config.death_clip_duration),
                 "-i", video_path,
+                "-map", "0",
                 "-c", "copy",
                 "-avoid_negative_ts", "1",
                 str(output_file_path)
@@ -143,6 +145,7 @@ class FfmpegService:
             "ffmpeg",
             "-sseof", f"-{sseof_seconds}",
             "-i", video_path,
+            "-map", "0",
             "-c", "copy",
             "-avoid_negative_ts", "1",
             str(output_file_path)
