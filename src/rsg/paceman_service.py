@@ -6,7 +6,10 @@ import time
 import util
 from util import find_first
 from config import config
+from translator import translator
+from logger import setup_logger
 
+logger = setup_logger(__name__)
 
 EventId = Literal["rsg.enter_nether", "rsg.enter_bastion","rsg.enter_fortress", "rsg.first_portal",
 "rsg.second_portal", "rsg.enter_stronghold", "rsg.enter_end", "rsg.credits"]
@@ -30,6 +33,9 @@ class Event(BaseModel):
     def get_igt(self) -> int:
         return self.igt
 
+    def __str__(self):
+        return f"{util.ts_to_str(self.igt)[:-4]}{translator.event_map[self.eventId]}"
+
 class User(BaseModel):
     uuid: str
     liveAccount: Optional[str] = None
@@ -51,6 +57,10 @@ class LiveRunData(BaseModel):
     lastUpdated: int
     itemData: Optional[ItemData] = None
     nickname: str
+
+    def __str__(self):
+        eventList_str = ' '.join([str(e) for e in self.eventList])
+        return f"{self.gameVersion} | {self.nickname} | {eventList_str}"
 
     @computed_field
     @property
@@ -183,7 +193,7 @@ class PacemanService:
         try:
             data = requests.get(self._LIVE_RUNS_API).json()
         except requests.exceptions.RequestException as e:
-            print(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+            logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
             return []
 
         return [LiveRunData(**live_run) for live_run in data]
@@ -203,7 +213,7 @@ class PacemanService:
         :return: LiveRunData
         """
         live_run = self.get_my_live_run()
-        print("当前live_run信息", live_run)
+        logger.info(f"实时速通数据：{live_run}")
         run = None
 
         # 总共两种情况：①非完整速通，即一场速通没有完成就reset，但是这场速通中有值得切片的pace
@@ -222,10 +232,10 @@ class PacemanService:
             return None
 
         if not run.is_valid_for_clip():
-            print(run, "不满足切片条件，跳过")
+            logger.info("不满足切片条件，跳过")
             return None
         if run.worldId in self._clip_worlds:
-            print(run, "已经切片过，跳过")
+            logger.info("已经切片过，跳过")
             return None
 
         self._clip_worlds.append(run.worldId)
@@ -236,7 +246,7 @@ class PacemanService:
         try:
             data = requests.get(f"{self._GET_WORLD_API}/?worldId={world_id}").json()
         except requests.exceptions.RequestException as e:
-            print(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+            logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
             return None
 
         return WorldData(**data)

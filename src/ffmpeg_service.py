@@ -8,6 +8,9 @@ import shutil
 
 
 from ranked.ranked_service import MatchInfo, MatchType, MatchData
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class FfmpegService:
     @dataclass
@@ -23,7 +26,8 @@ class FfmpegService:
         try:
             self._check()
         except Exception as e:
-            input(e.args[0])
+            logger.warning(e.args[0])
+            input()
             exit()
 
     @staticmethod
@@ -35,11 +39,12 @@ class FfmpegService:
             raise EnvironmentError("未找到ffmpeg，请确保已安装FFmpeg并将ffmpeg添加到系统环境变量！"
                                    "（https://github.com/BtbN/FFmpeg-Builds/releases）")
 
-        print("ffmpeg检查通过！")
+        logger.info("ffmpeg检查通过！")
 
 
     @staticmethod
     def get_video_info(file_path: Path) -> VideoInfo:
+        logger.debug(f"正在获取视频{file_path}的信息")
         command = [
             "ffprobe",
             "-v", "error",  # 只输出错误信息
@@ -49,6 +54,7 @@ class FfmpegService:
             "-print_format", "json",
             str(file_path)
         ]
+        logger.debug(f"正在运行: {' '.join(command)}")
         result = subprocess.run(command, stdout=subprocess.PIPE)
         video_info = json.loads(result.stdout)
         # 提取相关信息
@@ -68,7 +74,7 @@ class FfmpegService:
     @staticmethod
     def auto_cut(match_info: MatchInfo, video_path: Path) -> Path:
         if match_info.type_ == MatchType.PRIVATE_ROOM_MATCH:
-            print("警告：当前为私人房间，如果未设置'当有人完成时比赛结束'则可能剪辑不准确！")
+            logger.warning("当前为私人房间，如果未设置'当有人完成时比赛结束'则可能剪辑不准确！")
         sseof_seconds = match_info.result.time // 1000 + config.extra_seconds
         output_file_path = config.video_dir / f"match[{match_info.id_}].{config.output_format}"
         cmd = [
@@ -80,8 +86,9 @@ class FfmpegService:
             "-avoid_negative_ts", "1",
             str(output_file_path)
         ]
+        logger.debug(f"正在运行: {' '.join(cmd)}")
         subprocess.run(cmd, capture_output=True)
-        print(f"已生成切片{output_file_path}")
+        logger.info(f"已生成切片{output_file_path}")
         return output_file_path
 
 
@@ -112,8 +119,9 @@ class FfmpegService:
                 "-avoid_negative_ts", "1",
                 str(output_file_path)
             ]
+            logger.debug(f"正在运行: {' '.join(cmd)}")
             subprocess.run(cmd, capture_output=True)
-            print(f"已生成死亡切片{output_file_path}")
+            logger.info(f"已生成死亡切片{output_file_path}")
             ret.append(output_file_path)
             file_list.append(f"file '{output_file_path.name}'\n")
 
@@ -123,8 +131,7 @@ class FfmpegService:
 
     @staticmethod
     def screenshot(video_path: Path, ss: int, output_path: Path):
-        subprocess.run(
-            [
+        cmd = [
                 "ffmpeg",
                 "-y",
                 "-ss", str(ss),
@@ -133,9 +140,9 @@ class FfmpegService:
                 "-q:v", "1",
                 "-frames:v", "1",
                 str(output_path),
-            ]
-            ,capture_output=True
-        )
+        ]
+        logger.debug(f"正在运行: {' '.join(cmd)}")
+        subprocess.run(cmd, capture_output=True)
 
     @staticmethod
     def rsg_cut(live_run: LiveRunData, world_data: WorldData, video_path: Path) -> Path:
@@ -150,8 +157,9 @@ class FfmpegService:
             "-avoid_negative_ts", "1",
             str(output_file_path)
         ]
+        logger.debug(f"正在运行: {' '.join(cmd)}")
         subprocess.run(cmd, capture_output=True)
-        print(f"已生成切片{output_file_path}")
+        logger.info(f"已生成切片{output_file_path}")
         return output_file_path
 
 

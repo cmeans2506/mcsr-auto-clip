@@ -6,6 +6,9 @@ from translator import translator
 import util
 from ffmpeg_service import ffmpeg_service
 from ranked.ranked_service import UserData, MatchData
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class DescriptionGenerator:
     def __init__(self, match_data: MatchData, user_data: UserData, video_path: Path):
@@ -42,18 +45,15 @@ class DescriptionGenerator:
     def _generate_match_info(self):
         players = self._match_data.players
         changes = self._match_data.changes
-        match_info_str = f"""比赛模式: {translator.match_type_map[self._match_data.type_.name]}
-        
-{players[0].nickname} 大战 {players[1].nickname}
-
-比赛结果: """
+        match_info_str = f"{players[0].nickname} VS {players[1].nickname}: "
         for ch in changes:
             if ch.change is not None and ch.eloRate is not None:
                 match_info_str += f"""
 {self._match_data.get_player(ch.uuid).nickname:<16}{"胜" if ch.change > 0 else "败"}  ({ch.eloRate}  →  {ch.eloRate + ch.change})
 """
         match_info_str +=f"""
-当前赛季: 第{self._match_data.season}赛季
+比赛模式: {translator.match_type_map[self._match_data.type_.name]}
+当前赛季: {self._match_data.season}
 比赛时间: {datetime.fromtimestamp(self._match_data.date).strftime("%Y-%m-%d %H:%M:%S")}
 种子类型: {translator.seedtype_map[self._match_data.seedType]}
 猪堡类型: {translator.bastion_map[self._match_data.bastionType]}"""
@@ -117,7 +117,7 @@ elo排名：{self._user_data.eloRank}
 ■ 比赛详情：
 {self._generate_match_info()}
 
-■ 个人信息（本赛季）：
+■ 个人信息（本赛季排位模式）：
 {self._generate_user_info()}
 
 ■ 投稿条件：
@@ -132,6 +132,8 @@ elo排名：{self._user_data.eloRank}
 ■ 项目信息：
 {self._generate_repository_info()}
 """
-        with open(config.video_dir / f'desc match[{self._match_data.id_}].txt', 'w', encoding="utf8") as desc_file:
+        desc_file_path = config.video_dir / f'desc match[{self._match_data.id_}].txt'
+        with open(desc_file_path, 'w', encoding="utf8") as desc_file:
             desc_file.write(desc)
+        logger.debug(f"简介内容已经输出至{desc_file_path}")
         return desc

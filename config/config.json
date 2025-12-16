@@ -121,7 +121,7 @@
   "browser_executable": "D:/Software/chrome-win/chrome.exe",
   "use_cover": true,
   "extra_seconds": 15,
-  "wait_for_datapack": 30,
+  "wait_for_datapack": 20,
   "replay_prefix": "Replay ",
   "replay_suffix": "",
   "output_format": "mp4",
@@ -130,7 +130,7 @@
   "replay_threshold_seconds": 20,
   "clean_raw_file": true,
   "use_death_clip": true,
-  "death_clip_duration": 25,
+  "death_clip_duration": 20,
   "death_clip_ahead_seconds": 0,
 
   "use_messagebox": true

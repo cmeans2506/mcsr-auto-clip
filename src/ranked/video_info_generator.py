@@ -10,7 +10,9 @@ from bilibili_uploader import UploadInfo
 import util
 from translator import translator
 from config import config
+from logger import setup_logger
 
+logger = setup_logger(__name__)
 
 class VideoInfoGenerator:
     def __init__(self, match_data: MatchData, match_info: MatchInfo, user_data: UserData, video_path: Path):
@@ -25,15 +27,17 @@ class VideoInfoGenerator:
 
     def _generate_video_title(self) -> str:
         title = f"RANKED {util.ts_to_str(self._match_data.result.time)}"
-        if (self._match_data.result.time <= self._user_data.statistics.total.bestTime.ranked
-                and self._match_data.type_ == MatchType.RANKED_MATCH):
+        if (self._match_data.type_ == MatchType.RANKED_MATCH
+                and self._match_data.result.time <= self._user_data.statistics.total.bestTime.ranked):
             title += " 个人最佳"
         if self._match_data.type_ == MatchType.PRIVATE_ROOM_MATCH:
             title += " 私人房间"
         title += (f" {translator.seedtype_map[self._match_data.seedType]} "
                   f"{translator.bastion_map[self._match_data.bastionType]}")
-        with open(config.video_dir / f'title match[{self._match_data.id_}].txt', 'w', encoding="utf8") as title_file:
+        title_file_path = config.video_dir / f'title match[{self._match_data.id_}].txt'
+        with open(title_file_path, 'w', encoding="utf8") as title_file:
             title_file.write(title)
+        logger.debug(f"视频标题已经输出至{title_file_path}")
         return title
 
     def generate(self) -> UploadInfo:

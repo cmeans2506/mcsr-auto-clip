@@ -11,7 +11,9 @@ from bilibili_uploader import UploadInfo
 import util
 from translator import translator
 from config import config
+from logger import setup_logger
 
+logger = setup_logger(__name__)
 
 class VideoInfoGenerator:
     def __init__(self, live_run: LiveRunData, world_data: WorldData, video_path: Path):
@@ -35,8 +37,10 @@ class VideoInfoGenerator:
         video_title = " ".join(list(filter(None, map(get_event_str, self._live_run.eventList))))
         if (points := self._live_run.get_points()) is not None:
             video_title += f" 积分:{points}"
-        with open(config.video_dir / f'title world[{self._world_data.data.id}].txt', 'w', encoding="utf8") as title_file:
+        title_file_path = config.video_dir / f'title world[{self._world_data.data.id}].txt'
+        with open(title_file_path, 'w', encoding="utf8") as title_file:
             title_file.write(video_title)
+        logger.debug(f"视频标题已经输出至{title_file_path}")
         return video_title
 
     def _generate_video_tags(self):

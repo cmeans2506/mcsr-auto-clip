@@ -71,6 +71,13 @@ class Config(BaseModel):
         path = Path(__file__).parent.parent / "templates"
         return path
 
+    @computed_field
+    @property
+    def log_dir(self) -> Path:
+        path = self.base_dir / "logs"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
 with open(Path(__file__).parent.parent / "config" / "config.json", "r", encoding="utf8") as f:
     try:
         config = Config.model_validate_json(f.read())

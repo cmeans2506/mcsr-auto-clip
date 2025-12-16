@@ -2,9 +2,14 @@ from typing import Optional
 from pydantic import BaseModel, Field
 import requests
 from enum import Enum
+from datetime import datetime
 
 from config import config
 import util as util
+from translator import translator
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class Seed(BaseModel):
@@ -81,6 +86,39 @@ class MatchInfo(BaseModel):
         if self.seedType not in config.upload_setting.ranked[self.type_.name].seed_type:
             return False
         return True
+
+    def __str__(self) -> str:
+        mode = translator.match_type_map[self.type_.name]
+
+        my_info = self.get_my_info()
+        if my_info and my_info.uuid == self.result.uuid:
+            result = "胜"
+        else:
+            result = "负"
+
+        if self.forfeited:
+            time_part = "弃赛"
+        elif result == "胜":
+            time_part = util.ts_to_str(self.result.time)
+        else:
+            time_part = "-"
+
+        seed_type = translator.seedtype_map[self.seedType]
+
+        current_time = datetime.now().timestamp()
+        time_diff = current_time - self.date
+
+        if time_diff < 3600:  # 小于1小时
+            minutes_ago = int(time_diff / 60)
+            time_diff_str = f"{minutes_ago}分钟前"
+        elif time_diff < 86400:  # 小于1天
+            hours_ago = int(time_diff / 3600)
+            time_diff_str = f"{hours_ago}小时前"
+        else:  # 大于等于1天
+            days_ago = int(time_diff / 86400)
+            time_diff_str = f"{days_ago}天前"
+
+        return f"{mode} - {result} {time_part} {seed_type} {time_diff_str}"
 
 
 class UserData(BaseModel):
@@ -199,21 +237,21 @@ class RankedService:
         """
         self._name = name
         try:
-            print("正在检验 'player.name' 和 'player.uuid' ")
+            logger.info("正在检验 'player.name' 和 'player.uuid' ")
             api = f"{RankedService._RANKED_API}{self._name}"
-            responce = requests.get(api)
+            response = requests.get(api)
         except requests.exceptions.RequestException as e:
-            print(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
+            logger.warning(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
             exit()
-        if responce.status_code != 200:
-            print(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
+        if response.status_code != 200:
+            logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
             exit()
-        if responce.json()["data"]["uuid"] != uuid:
-            print(f"在 'config.json' 中配置的 'player.uuid' 有误：{uuid}，"
-                  f"已修正为：{responce.json()['data']['uuid']}")
-            uuid = responce.json()["data"]["uuid"]
+        if response.json()["data"]["uuid"] != uuid:
+            logger.warning(f"在 'config.json' 中配置的 'player.uuid' 有误：{uuid}，"
+                  f"已修正为：{response.json()['data']['uuid']}")
+            uuid = response.json()["data"]["uuid"]
 
-        print("'player.name' 和 'player.uuid' 检验通过！")
+        logger.info("'player.name' 和 'player.uuid' 检验通过！")
 
         self._uuid = uuid
         self._any_clip_matches: list[int] = []
@@ -227,7 +265,7 @@ class RankedService:
             data = requests.get(api).json()
         except requests.exceptions.RequestException as e:
             if e.request:
-                print(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+                logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
             return []
         if data["status"] != "success":
             raise RuntimeError(data["data"])
@@ -237,37 +275,38 @@ class RankedService:
     def get_latest_match(self) -> Optional[MatchInfo]:
         match_info_list = self.get_recent_matches(count=5)
         if not match_info_list:
+            logger.info(f"{config.player.name}最近没有比赛")
             return None
 
         latest_match = match_info_list[0]
-        print(f"最新对局：{latest_match.model_dump(mode='python', exclude_none=True, include={'id_', 'type_', 'category', 'players', 'result', 'forfeited', 'season', 'date', 'seedType', 'bastionType'})}")
+        logger.info(f"最新对局：{latest_match}")
 
         if latest_match.date < config.launch_time:
-            print("比赛时间早于程序启动时间，跳过")
+            logger.info("比赛时间早于程序启动时间，跳过")
             return None
         if latest_match.result.uuid != config.player.uuid:
-            print("比赛未胜利，跳过")
+            logger.info("比赛未胜利，跳过")
             return None
         if latest_match.forfeited or latest_match.decayed:
-            print("不是完整比赛，跳过")
+            logger.info("不是完整比赛，跳过")
             return None
         if latest_match.result.time > config.clip_setting.ranked[latest_match.type_.name].max_time:
-            print(f"比赛的完成时间{util.ts_to_str(latest_match.result.time)}超过了最大允许时间"
+            logger.info(f"比赛的完成时间{util.ts_to_str(latest_match.result.time)}超过了最大允许时间"
                   f"{util.ts_to_str(config.clip_setting.ranked[latest_match.type_.name].max_time)}，跳过")
             return None
         if latest_match.bastionType not in config.clip_setting.ranked[latest_match.type_.name].bastion_type:
-            print(f"比赛的猪堡类型是{latest_match.bastionType}，不在指定的范围内："
+            logger.info(f"比赛的猪堡类型是{latest_match.bastionType}，不在指定的范围内："
                   f"{config.clip_setting.ranked[latest_match.type_.name].bastion_type}，跳过")
             return None
         if latest_match.seedType not in config.clip_setting.ranked[latest_match.type_.name].seed_type:
-            print(f"比赛的主世界类型是{latest_match.seedType}，不在指定的范围内："
+            logger.info(f"比赛的主世界类型是{latest_match.seedType}，不在指定的范围内："
                   f"{config.clip_setting.ranked[latest_match.type_.name].seed_type}，跳过")
             return None
         if latest_match.category != "ANY":
-            print(f"比赛的项目是{latest_match.category}，不是ANY%速通，跳过")
+            logger.info(f"比赛的项目是{latest_match.category}，不是ANY%速通，跳过")
             return None
         if latest_match.id_ in self._any_clip_matches:
-            print(f"比赛已经被切片过，跳过")
+            logger.info(f"比赛已经被切片过，跳过")
             return None
 
         self._any_clip_matches.append(latest_match.id_)
@@ -291,7 +330,7 @@ class RankedService:
         if util.find_first(is_death_timeline, latest_match_data.timelines) is None:
             return None
 
-        print(f"最新死亡切片对局：match[{latest_match_data.id_}]")
+        logger.info(f"最新死亡切片对局：match[{latest_match_data.id_}]")
         self._death_clip_matches.append(latest_match_data.id_)
         return latest_match_data
 

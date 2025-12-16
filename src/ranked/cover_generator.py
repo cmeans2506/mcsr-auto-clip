@@ -8,19 +8,24 @@ from ranked.ranked_service import MatchInfo, ranked_service
 import util
 from config import config
 from ffmpeg_service import ffmpeg_service
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class CoverGenerator:
     def __init__(self):
-        with open("../templates/cover_for_ranked.html", "r", encoding="utf8") as template_file:
+        template_file_path = config.template_dir / "cover_for_ranked.html"
+        with open(template_file_path, "r", encoding="utf8") as template_file:
             self._template = Template(template_file.read())
 
         self._hti: Optional[Html2Image] = None
+        logger.info(f"CoverGenerator测试中...")
         try:
             self._check()
         except Exception as e:
-            print(e.args[0])
-            print("CoverGenerator测试失败，已为您关闭封面生成功能！")
+            logger.warning(e.args[0])
+            logger.warning("CoverGenerator测试失败，已为您关闭封面生成功能！")
         else:
             self._hti = Html2Image(output_path=str(config.video_dir),
                                            browser_executable=config.browser_executable)
@@ -47,8 +52,7 @@ class CoverGenerator:
         if not Path(ret[0]).exists():
             raise EnvironmentError("CoverGenerator生成图片失败！可能是你的chromium版本太新！请尝试使用旧版本！"
                                    "（https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F1250504%2Fchrome-win.zip?generation=1705968802991678&alt=media）")
-
-        print("CoverGenerator检查通过！")
+        logger.info("CoverGenerator检查通过！")
 
     def generate(self, video_path: Path, match_info: MatchInfo) -> Path:
         bg_path = config.video_dir / f'BG match[{match_info.id_}].jpg'
@@ -56,6 +60,7 @@ class CoverGenerator:
         font_path = config.template_dir / "fonts" / "mc.ttf"
         ffmpeg_service.screenshot(video_path=video_path, ss=120, output_path=bg_path)
         if self._hti is None:
+            logger.info(f"未启用封面生成功能，直接使用{bg_path}作为封面")
             return bg_path
 
         html_content = self._template.render(
@@ -68,10 +73,12 @@ class CoverGenerator:
             result_time=util.ts_to_str(match_info.result.time)
         )
         save_as = f'cover match[{match_info.id_}].jpg'
-        with open(config.video_dir / f'cover match[{match_info.id_}].html', 'w', encoding="utf8") as html_file:
+        html_path = config.video_dir / f'cover match[{match_info.id_}].html'
+        with open(html_path, 'w', encoding="utf8") as html_file:
             html_file.write(html_content)
+        logger.debug(f"封面html文件已生成至{html_path}")
         ret = self._hti.screenshot(html_str=html_content, save_as=save_as)
-        print(f"封面已生成至{ret[0]}")
+        logger.info(f"封面已生成至{ret[0]}")
 
         return Path(ret[0])
 

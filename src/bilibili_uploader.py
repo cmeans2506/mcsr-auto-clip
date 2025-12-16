@@ -12,6 +12,9 @@ from dataclasses import dataclass
 
 import util
 from config import config
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 @dataclass
 class UploadInfo:
@@ -39,7 +42,8 @@ class BiliUploader:
         try:
             self._check()
         except Exception as e:
-            input(e.args[0])
+            logger.warning(e.args[0])
+            input()
             exit()
 
         self._upload_history_list: list[BiliUploader.UploadHistoryInfo] = []
@@ -56,7 +60,7 @@ class BiliUploader:
         if not (config.base_dir / "cookies.json").exists():
             raise EnvironmentError(f"biliup未登录，请登录！(在'{config.base_dir}'下打开终端，输入'./biliup login')")
 
-        print("BilibiliUploader检查通过！")
+        logger.info("BilibiliUploader检查通过！")
 
     @staticmethod
     def _parse_aid_bvid(log) -> (str, str):
@@ -75,6 +79,7 @@ class BiliUploader:
         with open(self._up_history_path, "w", encoding="utf8") as up_history_file:
             history_data = [item.model_dump(by_alias=True) for item in self._upload_history_list]
             json.dump(history_data, up_history_file, indent=4)
+        logger.info("上传历史已写入文件")
 
 
     def _upload_task(self, video_info: UploadInfo):
@@ -89,18 +94,19 @@ class BiliUploader:
             "--tag", ",".join(video_info.video_tags),
             str(video_info.video_path),
         ]
-        print(f"uploading: {video_info.video_title}")
+        logger.info(f"正在上传: {video_info.video_title}")
+        logger.debug(f"正在运行: {' '.join(cmd)}")
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", cwd=config.base_dir)
         except subprocess.CalledProcessError as e:
             if config.use_messagebox:
                 messagebox.showerror("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
-            print("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
+            logger.warning("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             return
         aid, bvid = BiliUploader._parse_aid_bvid(result.stdout)
         if config.use_messagebox:
-            messagebox.showinfo("文件上传成功！", f"<{video_info.video_title}>文件已经上传至{bvid}")
-        print(f"<{video_info.video_title}>文件已经上传至{bvid}")
+            messagebox.showinfo("文件上传成功！", f"{video_info.video_title} 已经上传至{bvid}")
+        logger.info(f"{video_info.video_title} 已经上传至{bvid}")
 
         with self._lock:
             self._upload_history_list.append(

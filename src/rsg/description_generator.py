@@ -8,6 +8,10 @@ import util
 from ffmpeg_service import ffmpeg_service
 from rsg.paceman_service import LiveRunData, WorldData, Event, ContextEvent, User, RunData
 from rsg.rsg_pb import rsg_pb
+from logger import setup_logger
+
+logger = setup_logger(__name__)
+
 
 class DescriptionGenerator:
     def __init__(self, live_run: LiveRunData, world_data: WorldData, video_path: Path):
@@ -106,8 +110,10 @@ class DescriptionGenerator:
 ■ 项目信息：
 {self._generate_repository_info()}
 """
-        with open(config.video_dir / f'desc world[{self._world_data.data.id}].txt', 'w', encoding="utf8") as desc_file:
+        desc_file_path = config.video_dir / f'desc world[{self._world_data.data.id}].txt'
+        with open(desc_file_path, 'w', encoding="utf8") as desc_file:
             desc_file.write(desc)
+        logger.debug(f"简介内容已经输出至{desc_file_path}")
         return desc
 
 

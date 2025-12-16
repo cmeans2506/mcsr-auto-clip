@@ -10,6 +10,10 @@ from ranked.ranked_service import ranked_service
 from rsg.video_info_generator import VideoInfoGenerator as RsgVideoInfoGenerator
 from rsg.paceman_service import paceman_service
 from rsg.rsg_pb import rsg_pb
+from logger import setup_logger
+
+logger = setup_logger(__name__)
+
 
 class AutoClip:
     def __init__(self):
@@ -28,7 +32,7 @@ class AutoClip:
             return
 
         raw_video_path = obs_controller.replay_save()
-        print(f"[ranked any%切片]存储了比赛[{latest_match.id_}]的录像：{raw_video_path}")
+        logger.info(f"存储了比赛[{latest_match.id_}]的录像：{raw_video_path}")
 
         cut_video_path = ffmpeg_service.auto_cut(match_info=latest_match, video_path=raw_video_path)
 
@@ -53,13 +57,13 @@ class AutoClip:
             return
 
         if live_run.is_complete_run():
-            print(f"本场rsg速通是完整速通，等待{config.wait_for_datapack}秒用于输入/datapack list和/seed等指令...")
+            logger.info(f"本场rsg速通是完整速通，等待{config.wait_for_datapack}秒用于输入/datapack list和/seed等指令...")
             time.sleep(config.wait_for_datapack)
 
         world_data = paceman_service.get_world(live_run.worldId)
 
         raw_video_path = obs_controller.replay_save()
-        print(f"[rsg any%切片]存储了世界[{world_data.data.id}]的录像：{raw_video_path}")
+        logger.info(f"存储了世界[{world_data.data.id}]的录像：{raw_video_path}")
 
         cut_video_path = ffmpeg_service.rsg_cut(live_run=live_run, world_data=world_data, video_path=raw_video_path)
 
@@ -80,7 +84,7 @@ class AutoClip:
             return
 
         raw_video_path = obs_controller.replay_save()
-        print(f"[死亡切片]存储了比赛[{latest_match_data.id_}]的录像：{raw_video_path}")
+        logger.info(f"存储了比赛[{latest_match_data.id_}]的录像：{raw_video_path}")
 
         cut_video_list = ffmpeg_service.death_clip(match_data=latest_match_data, video_path=raw_video_path)
 
@@ -88,7 +92,10 @@ class AutoClip:
 
     def run(self):
         while True:
-            schedule.run_pending()
+            try:
+                schedule.run_pending()
+            except Exception as e:
+                logger.exception(f"运行时出现错误: {e}")
             time.sleep(1)  # 防止占用过多 CPU
 
 
