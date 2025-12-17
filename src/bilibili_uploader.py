@@ -37,7 +37,6 @@ class BiliUploader:
         upload_time: str
 
     def __init__(self):
-        self._biliup_path: Path = config.base_dir / "biliup.exe"
         self._lock = threading.Lock()
         try:
             self._check()
@@ -54,11 +53,18 @@ class BiliUploader:
 
 
     def _check(self):
-        if shutil.which(self._biliup_path) is None:
-            raise EnvironmentError(f"未找到biliup，请确保已将biliup.exe添加到{config.base_dir}")
+        if shutil.which("biliup") is None:
+            raise EnvironmentError(f"未找到biliup，请确保已安装biliup并将biliup添加到系统环境变量！")
+
 
         if not (config.base_dir / "cookies.json").exists():
-            raise EnvironmentError(f"biliup未登录，请登录！(在'{config.base_dir}'下打开终端，输入'./biliup login')")
+            logger.warning(f"biliup未登录，请登录！推荐选择扫码登录！")
+            cmd = ["biliup", "login"]
+            logger.debug(f"正在运行: {' '.join(cmd)}")
+            try:
+                subprocess.run(cmd, check=True, cwd=config.base_dir, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            except subprocess.CalledProcessError as e:
+                raise EnvironmentError(f"登录失败！退出码: {e.returncode}, stderr：{e.stderr}")
 
         logger.info("BilibiliUploader检查通过！")
 
@@ -84,8 +90,7 @@ class BiliUploader:
 
     def _upload_task(self, video_info: UploadInfo):
         cmd = [
-            str(self._biliup_path),
-            "upload",
+            "biliup", "upload",
             "--copyright", "1",
             "--tid", "17",
             *(["--cover", str(video_info.cover_path)] if config.use_cover else []),

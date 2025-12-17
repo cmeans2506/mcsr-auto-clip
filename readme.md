@@ -1,40 +1,28 @@
 # MCSR AUTO CLIP
 
-本项目基于 Python 开发，整合 OBS websocket、biliup 和 FFmpeg，实现 Minecraft Speedrun（MCSR）视频的自动切片、封面生成及上传功能。
+本项目基于 Python3.13 开发，整合 OBS websocket、biliup 和 FFmpeg，实现 Minecraft Speedrun（MCSR）视频的自动切片、封面生成及上传功能。
 
 
 ## 快速开始
 
 ### 1. 安装依赖组件
-#### ① FFmpeg 安装
-- 下载 [FFmpeg](https://github.com/BtbN/FFmpeg-Builds/releases) 选择 `ffmpeg-master-latest-win64-gpl.zip`
-
-- 将 `ffmpeg.exe` 加入系统环境变量
-
-#### ② OBS 配置
+#### ① OBS 配置
 1. OBS 中开启WebSocket服务器
    ```
    OBS菜单栏 -> 工具 -> WebSocket服务器设置 -> 启用，身份验证关闭
    ```
 2. 启用回放缓存：
    ```
-   OBS控制按钮 -> 设置 -> 输出 -> 回放缓存 -> 启用，回放时长上限1200秒（建议）
+   OBS控制按钮 -> 设置 -> 输出 -> 回放缓存 -> 启用，回放时长上限1200秒（回放时长需要大于你剪辑成片的长度）
    ```
 3. 记录 websocket 连接信息（默认：`localhost:4455`）
 
-#### ③ biliup 部署
-- 下载 [biliup](https://github.com/ForgQi/biliup-rs) 到工作目录（参考下文配置说明）
-- 登录哔哩哔哩账号
 
-#### ④chromium 部署
-- 下载 [chromium](https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F1135619%2Fchrome-win.zip?generation=1682469079864558&alt=media)
-- 修改配置文件路径（参考下文配置说明）
+#### ②安装相关依赖
+- 双击 `./src/install-requirements.bat` ，脚本会自动安装python包，biliup，chromium，ffmpeg
 
-#### ⑤安装python包
-- 在`./src` 文件夹下，运行 `pip install -r requirements.txt`
-
-#### ⑥运行
-- 在`./src` 文件夹下，运行 `python ./main.py`
+#### ③运行
+- 双击 `./src/start.bat`
 
 ### 2. 配置文件说明
  `./config/config.json` 文件：
@@ -161,12 +149,14 @@
 
 ### 3. 目录结构
 项目启动后。会在目录中产生
+- `logs`文件夹，用于脚本输出日志文件
 - `mcsr`文件夹，存储所有 any% 速通比赛视频及相关素材。在这个文件夹中，视频会根据日期进行分类。
 - `death_clip`文件夹，用于存储所有死亡切片。在这个文件夹中，视频会根据日期进行分类。只切片不上传。产生`match[<比赛ID>]<时间节点>.mp4`文件。同时同目录下还会产生`filelist.txt`文件，这是用于合并所有切片用到的文件，不要乱动。
 - `up_history.json`上传记录
 ```
 工作目录/
-├── biliup.exe             # 上传工具
+├── logs/                  # 日志文件夹
+│   └── mcsr_auto_clip_YYYYMMDD.log
 ├── mcsr/                  # 视频存储
 │   └── YYYYMMDD/          # 按日期分类
          # ranked
@@ -190,7 +180,7 @@
 └── up_history.json        # 上传记录
 ```
 
-## 功能特性
+## 功能点
 - **智能切片**：根据比赛时长自动切片和裁剪视频
 - **封面生成**：利用 Chromium 自动生成视频封面
 - **视频上传**：利用 biliup 自动上传视频
@@ -206,3 +196,17 @@
 5. 私人房间如果未设置'当有人完成时比赛结束'则可能剪辑不准确！
 6. OBS录像路径无要求
 
+## 备用方案
+如果上述安装方法无法成功，请尝试以下的方法
+#### ① FFmpeg 安装
+- 下载 [FFmpeg](https://github.com/BtbN/FFmpeg-Builds/releases) 选择 `ffmpeg-master-latest-win64-gpl.zip`
+- 将 `ffmpeg.exe` 和 `ffprobe.exe` 加入系统环境变量
+
+#### ② biliup 部署
+- 下载 [biliup](https://github.com/biliup/biliup) 选择 `biliupR-v1.1.28-x86_64-windows.zip` 
+- 解压后把 `biliup.exe` 加入系统环境变量
+- 在工作目录打开终端，输入 `biliup login` 登录哔哩哔哩账号，推荐使用扫码登录
+
+#### ③chromium 部署
+- 下载 [chromium](https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F1135619%2Fchrome-win.zip?generation=1682469079864558&alt=media)
+- 修改配置文件路径（参考下文配置说明），把 `config.json` 中 `browser_executable` 字段的值改为 `chrome.exe` 所在的路径，注意 `\` 与 `/`
