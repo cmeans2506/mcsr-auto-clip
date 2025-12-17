@@ -188,10 +188,11 @@ class PacemanService:
         self._last_live_run: Optional[LiveRunData] = None
         # 有关uuid和name的检查在 RankedService 的初始化过程中已经检查过了
         # 这里就不再重复检查了
+        self._session = requests.Session()
 
     def get_live_runs(self) -> list[LiveRunData]:
         try:
-            data = requests.get(self._LIVE_RUNS_API).json()
+            data = self._session.get(self._LIVE_RUNS_API).json()
         except requests.exceptions.RequestException as e:
             logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
             return []
@@ -244,7 +245,7 @@ class PacemanService:
 
     def get_world(self, world_id: str) -> Optional[WorldData]:
         try:
-            data = requests.get(f"{self._GET_WORLD_API}/?worldId={world_id}").json()
+            data = self._session.get(f"{self._GET_WORLD_API}/?worldId={world_id}").json()
         except requests.exceptions.RequestException as e:
             logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
             return None

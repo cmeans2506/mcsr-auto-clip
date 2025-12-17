@@ -256,13 +256,14 @@ class RankedService:
         self._uuid = uuid
         self._any_clip_matches: list[int] = []
         self._death_clip_matches: list[int] = []
+        self._session = requests.Session()
 
     def get_recent_matches(self, match_type: Optional[MatchType] = None, count: int = 50) -> list[MatchInfo]:
         api = f"{RankedService._RANKED_API}{self._name}{RankedService._MATCHES_API_EXTENSION}?count={count}"
         if match_type is not None:
             api += f"&type={match_type.value}"
         try:
-            data = requests.get(api).json()
+            data = self._session.get(api).json()
         except requests.exceptions.RequestException as e:
             if e.request:
                 logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
@@ -337,11 +338,11 @@ class RankedService:
 
     def get_user_data(self) -> UserData:
         api = f"{RankedService._RANKED_API}{self._name}"
-        return UserData(**(requests.get(api).json()["data"]))
+        return UserData(**(self._session.get(api).json()["data"]))
 
     def get_match_data(self, id_: int) -> MatchData:
         api = f"{RankedService._MATCH_API}{id_}"
-        return MatchData(**(requests.get(api).json()["data"]))
+        return MatchData(**(self._session.get(api).json()["data"]))
 
 
 ranked_service = RankedService(name=config.player.name, uuid=config.player.uuid)
