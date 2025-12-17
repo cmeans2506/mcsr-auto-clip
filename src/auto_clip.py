@@ -1,9 +1,10 @@
-import schedule
+import logging
 import time
 from ffmpeg_service import ffmpeg_service
 from config import config
 from bilibili_uploader import bilibili_uploader
 from obs_controller import obs_controller
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 from ranked.video_info_generator import VideoInfoGenerator as RankedVideoInfoGenerator
 from ranked.ranked_service import ranked_service
@@ -13,18 +14,18 @@ from rsg.rsg_pb import rsg_pb
 from logger import setup_logger
 
 logger = setup_logger(__name__)
-
+setup_logger('apscheduler', logging.WARNING)
 
 class AutoClip:
     def __init__(self):
-        schedule.every(10).seconds.do(self._ranked_job)
-        schedule.every(10).seconds.do(self._rsg_job)
-
+        self.blocking_scheduler = BlockingScheduler()
+        self.blocking_scheduler.add_job(self._ranked_job, 'interval', seconds=10)
+        self.blocking_scheduler.add_job(self._rsg_job, 'interval', seconds=10)
         if config.clean_raw_file:
-            schedule.every(2).minutes.do(obs_controller.clean)
-
+            self.blocking_scheduler.add_job(obs_controller.clean, 'interval', minutes=2)
         if config.use_death_clip:
-            schedule.every(10).seconds.do(self._death_clip_job)
+            self.blocking_scheduler.add_job(self._death_clip_job, 'interval', seconds=10)
+
 
     def _ranked_job(self):
         latest_match = ranked_service.get_latest_match()
@@ -91,12 +92,7 @@ class AutoClip:
         # 不上传
 
     def run(self):
-        while True:
-            try:
-                schedule.run_pending()
-            except Exception as e:
-                logger.exception(f"运行时出现错误: {e}")
-            time.sleep(1)  # 防止占用过多 CPU
+        self.blocking_scheduler.start()
 
 
 auto_clip = AutoClip()
