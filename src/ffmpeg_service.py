@@ -80,7 +80,7 @@ class FfmpegService:
         cmd = [
             "ffmpeg",
             "-sseof", f"-{sseof_seconds}",
-            "-i", video_path,
+            "-i", str(video_path),
             "-map", "0",
             "-c", "copy",
             "-avoid_negative_ts", "1",
@@ -113,7 +113,7 @@ class FfmpegService:
                 "ffmpeg",
                 "-sseof", f"-{sseof_seconds}",
                 "-t", str(config.death_clip_duration),
-                "-i", video_path,
+                "-i", str(video_path),
                 "-map", "0",
                 "-c", "copy",
                 "-avoid_negative_ts", "1",
@@ -151,7 +151,7 @@ class FfmpegService:
         cmd = [
             "ffmpeg",
             "-sseof", f"-{sseof_seconds}",
-            "-i", video_path,
+            "-i", str(video_path),
             "-map", "0",
             "-c", "copy",
             "-avoid_negative_ts", "1",

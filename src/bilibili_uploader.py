@@ -1,5 +1,8 @@
+import os
 import shutil
 import subprocess
+import time
+
 from pydantic import BaseModel, Field
 import json
 from pathlib import Path
@@ -58,12 +61,40 @@ class BiliUploader:
 
 
         if not (config.base_dir / "cookies.json").exists():
-            logger.warning(f"biliup未登录，请登录！推荐选择扫码登录！")
+            qrcode_path = config.base_dir / 'qrcode.png'
+            qrcode_path.unlink(missing_ok=True)
+            logger.debug(f"清理了{qrcode_path}")
+            logger.warning(f"biliup未登录，请选择用于上传视频的账号登录！推荐选择扫码登录！")
             cmd = ["biliup", "login"]
             logger.debug(f"正在运行: {' '.join(cmd)}")
             try:
+                stop_assist = False
+                def assist():
+                    logger.debug("进入assist()")
+                    start_time = time.time()
+                    while not qrcode_path.exists():
+                        if stop_assist or time.time() - start_time > 300:
+                            logger.debug("退出assist()")
+                            return
+                        time.sleep(0.5)
+
+                    os.startfile(qrcode_path)
+
+                    while not (config.base_dir / "cookies.json").exists():
+                        if stop_assist or time.time() - start_time > 300:
+                            logger.debug("退出assist()")
+                            return
+                        time.sleep(0.5)
+                    logger.debug("退出assist()")
+                thread = threading.Thread(
+                    target=assist,
+                    args=(),
+                    daemon=True
+                )
+                thread.start()
                 subprocess.run(cmd, check=True, cwd=config.base_dir, creationflags=subprocess.CREATE_NEW_CONSOLE)
             except subprocess.CalledProcessError as e:
+                stop_assist = True
                 raise EnvironmentError(f"登录失败！退出码: {e.returncode}, stderr：{e.stderr}")
 
         logger.info("BilibiliUploader检查通过！")

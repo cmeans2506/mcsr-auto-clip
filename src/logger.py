@@ -3,7 +3,7 @@ from datetime import datetime
 from config import config
 
 
-def setup_logger(name=None, log_level=logging.INFO):
+def setup_logger(name=None, log_level=logging.DEBUG):
     # 获取或创建 logger
     logger = logging.getLogger(name or 'main')
 
