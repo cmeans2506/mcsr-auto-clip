@@ -28,7 +28,8 @@ class CoverGenerator:
             logger.warning("CoverGenerator测试失败，已为您关闭封面生成功能！")
         else:
             self._hti = Html2Image(output_path=str(config.video_dir),
-                                           browser_executable=config.browser_executable)
+                                   browser_executable=config.browser_executable,
+                                   disable_logging=True)
 
 
     @staticmethod
@@ -37,7 +38,8 @@ class CoverGenerator:
             raise EnvironmentError("未找到chrome.exe，请确保已在config.json中配置正确！"
                                    "（https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F1250504%2Fchrome-win.zip?generation=1705968802991678&alt=media）")
 
-        test_hti = Html2Image(output_path=config.base_dir, browser_executable=config.browser_executable)
+        test_hti = Html2Image(output_path=config.base_dir, browser_executable=config.browser_executable,
+                                   disable_logging=True)
         save_as = 'helloworld.jpg'
         (config.base_dir / save_as).unlink(missing_ok=True)
         html_content = """
@@ -85,5 +87,5 @@ class CoverGenerator:
 
 if __name__ == "__main__":
     cover_generator = CoverGenerator()
-    cover_generator.generate(video_path=Path(r"D:\OBS Videos\Source Record\2025-04-13 14-41-26.mp4"),
+    cover_generator.generate(video_path=Path(r"D:\OBS Videos\Replay 2025-12-19 19-07-58.mp4"),
                              match_info=ranked_service.get_recent_matches()[0])

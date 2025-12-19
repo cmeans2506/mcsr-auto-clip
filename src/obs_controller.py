@@ -1,23 +1,41 @@
+from dataclasses import dataclass
 from datetime import datetime,timedelta
 import time
 from pathlib import Path
+from typing import Callable, Optional
 import obswebsocket
 from config import config
 import threading
-
+import logging
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
+setup_logger('obswebsocket', logging.WARNING)
+
 class OBSController:
-    def __init__(self, host:str , port:int):
+
+    @dataclass(slots=True)
+    class ReplayItem:
+        path: Path
+        timestamp: float
+
+        def is_expired(self) -> bool:
+            return time.time() - self.timestamp > config.replay_threshold_seconds
+
+    def __init__(self, host: str, port: int, on_disconnect: Callable[[obswebsocket.obsws], None]):
         self._host = host
         self._port = port
 
-        self._ws = obswebsocket.obsws(host, port)
+        self._ws = obswebsocket.obsws(host, port, on_disconnect=on_disconnect)
 
-        self._replay_video_list: list[Path] = []
+        # _replay_video_list没有什么太特殊的用途，这里直接就用tuple作为list的元素了
+        self._replay_video_list: list[OBSController.ReplayItem] = []
         self._lock = threading.Lock()
+
+        self.replay_path: Path = Path()
+        self.replay_buffer_saved_event = threading.Event()
+
         try:
             self._ws.connect()
         except Exception as e:
@@ -33,46 +51,45 @@ class OBSController:
             input()
             exit()
 
+        self._ws.register(self.on_replay_saved, obswebsocket.events.ReplayBufferSaved)
+
         logger.info("OBSController检查通过！")
 
-    @staticmethod
-    def is_file_recent(file_path: Path):
-        try:
-            file_name = file_path.stem
-            if not (file_name.startswith(config.replay_prefix) and file_name.endswith(config.replay_suffix)):
-                return False
-            date_time_str = file_name[len(config.replay_prefix):]
-            if len(config.replay_suffix) != 0:
-                date_time_str = date_time_str[:-len(config.replay_suffix)]
-            file_time = datetime.strptime(date_time_str, config.filename_formatting)
-            current_time = datetime.now()
-            return current_time - file_time <= timedelta(seconds=config.replay_threshold_seconds)
-        except (IndexError, ValueError):
-            # 如果文件名格式错误，返回 False
-            return False
 
-    def replay_save(self) -> Path:
+    def on_replay_saved(self, message):
+        # message 是 OBS 返回的原始事件数据
+        self.replay_path = Path(message.getSavedReplayPath())
+        self.replay_buffer_saved_event.set()
+
+
+    def save_replay(self, timeout=30) -> Optional[Path]:
         with self._lock:
-            if self._replay_video_list and self.is_file_recent(self._replay_video_list[-1]):
-                return self._replay_video_list[-1]
+            if self._replay_video_list:
+                latest_item = self._replay_video_list[-1]
+                if not latest_item.is_expired():
+                    return latest_item.path
+        self.replay_buffer_saved_event.clear()
         self._ws.call(obswebsocket.requests.SaveReplayBuffer())
-        while 1:
-            time.sleep(1)
-            last_replay_buffer = self._ws.call(obswebsocket.requests.GetLastReplayBufferReplay())
-            video_path: str = last_replay_buffer.datain["savedReplayPath"]
-            if self.is_file_recent(Path(video_path)):
-                logger.info(f"回放已经保存到{video_path}")
-                with self._lock:
-                    self._replay_video_list.append(Path(video_path))
-                return Path(video_path)
+        # 等待事件触发
+        if self.replay_buffer_saved_event.wait(timeout):
+            logger.info(f"回放已保存到: {self.replay_path}")
+            with self._lock:
+                self._replay_video_list.append(OBSController.ReplayItem(self.replay_path, time.time()))
+            return self.replay_path
+        else:
+            logger.warning("等待回放保存超时")
+            return None
+
+        # # 注销事件监听
+        # self._ws.unregister(self.on_replay_saved, obswebsocket.events.ReplayBufferSaved)
 
     def clean(self):
         with self._lock:
-            for replay_file in self._replay_video_list.copy():
-                if not self.is_file_recent(replay_file):
-                    replay_file.unlink()
-                    self._replay_video_list.remove(replay_file)
-                    logger.info(f"原始文件：{replay_file} 已删除")
+            for replay_item in self._replay_video_list.copy():
+                if replay_item.is_expired():
+                    replay_item.path.unlink()
+                    self._replay_video_list.remove(replay_item)
+                    logger.info(f"原始文件：{replay_item.path} 已删除")
 
 
     def check_replay_status(self) -> None:
@@ -86,6 +103,5 @@ class OBSController:
             self._ws.call(obswebsocket.requests.StartReplayBuffer())
             logger.info("回放缓存已启动！")
 
-obs_controller = OBSController(config.host, config.port)
 if __name__ == "__main__":
     pass

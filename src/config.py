@@ -35,10 +35,6 @@ class Config(BaseModel):
 
     extra_seconds: int
     wait_for_datapack: int
-    replay_prefix: str
-    replay_suffix: str
-    output_format: str
-    filename_formatting: str
 
     replay_threshold_seconds: int
     clean_raw_file: bool
@@ -46,7 +42,6 @@ class Config(BaseModel):
     death_clip_duration: int
     death_clip_ahead_seconds: int
 
-    use_messagebox: bool
 
     @computed_field
     @property
@@ -85,7 +80,7 @@ with open(Path(__file__).parent.parent / "config" / "config.json", "r", encoding
         if exc.errors()[0]['type'] == "json_invalid":
             print(f"'config.json' 文件格式有误：{exc.errors()[0]['msg']}")
         else:
-            print(f"解析 'config.json' 文件时出现错误：{'.'.join(exc.errors()[0]['loc'])}"
+            print(f"解析 'config.json' 文件时出现错误：{'.'.join(exc.errors()[0]['loc'])}，"
               f"{exc.errors()[0]['msg']}，实际输入为：{exc.errors()[0]['input']}")
         exit()
 

@@ -9,7 +9,6 @@ from pathlib import Path
 import re
 from datetime import  datetime
 import threading
-from tkinter import messagebox
 from typing import Optional, Literal
 from dataclasses import dataclass
 
@@ -135,13 +134,9 @@ class BiliUploader:
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", cwd=config.base_dir)
         except subprocess.CalledProcessError as e:
-            if config.use_messagebox:
-                messagebox.showerror("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             logger.warning("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             return
         aid, bvid = BiliUploader._parse_aid_bvid(result.stdout)
-        if config.use_messagebox:
-            messagebox.showinfo("文件上传成功！", f"{video_info.video_title} 已经上传至{bvid}")
         logger.info(f"{video_info.video_title} 已经上传至{bvid}")
 
         with self._lock:

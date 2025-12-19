@@ -3,7 +3,7 @@ import time
 from ffmpeg_service import ffmpeg_service
 from config import config
 from bilibili_uploader import bilibili_uploader
-from obs_controller import obs_controller
+from obs_controller import OBSController
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from ranked.video_info_generator import VideoInfoGenerator as RankedVideoInfoGenerator
@@ -19,10 +19,16 @@ setup_logger('apscheduler', logging.WARNING)
 class AutoClip:
     def __init__(self):
         self.blocking_scheduler = BlockingScheduler()
+
+        def on_disconnect(obsws):
+            logger.warning("OBS断连，停止任务的执行！")
+            self.blocking_scheduler.shutdown()
+        self.obs_controller = OBSController(config.host, config.port, on_disconnect=on_disconnect)
+
         self.blocking_scheduler.add_job(self._ranked_job, 'interval', seconds=10)
         self.blocking_scheduler.add_job(self._rsg_job, 'interval', seconds=10)
         if config.clean_raw_file:
-            self.blocking_scheduler.add_job(obs_controller.clean, 'interval', minutes=2)
+            self.blocking_scheduler.add_job(self.obs_controller.clean, 'interval', minutes=2)
         if config.use_death_clip:
             self.blocking_scheduler.add_job(self._death_clip_job, 'interval', seconds=10)
 
@@ -32,7 +38,7 @@ class AutoClip:
         if latest_match is None:
             return
 
-        raw_video_path = obs_controller.replay_save()
+        raw_video_path = self.obs_controller.save_replay()
         logger.info(f"存储了比赛[{latest_match.id_}]的录像：{raw_video_path}")
 
         cut_video_path = ffmpeg_service.auto_cut(match_info=latest_match, video_path=raw_video_path)
@@ -63,7 +69,7 @@ class AutoClip:
 
         world_data = paceman_service.get_world(live_run.worldId)
 
-        raw_video_path = obs_controller.replay_save()
+        raw_video_path = self.obs_controller.save_replay()
         logger.info(f"存储了世界[{world_data.data.id}]的录像：{raw_video_path}")
 
         cut_video_path = ffmpeg_service.rsg_cut(live_run=live_run, world_data=world_data, video_path=raw_video_path)
@@ -84,7 +90,7 @@ class AutoClip:
         if latest_match_data is None:
             return
 
-        raw_video_path = obs_controller.replay_save()
+        raw_video_path = self.obs_controller.save_replay()
         logger.info(f"存储了比赛[{latest_match_data.id_}]的录像：{raw_video_path}")
 
         cut_video_list = ffmpeg_service.death_clip(match_data=latest_match_data, video_path=raw_video_path)
