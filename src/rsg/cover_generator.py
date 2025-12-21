@@ -33,7 +33,7 @@ class CoverGenerator:
             logger.warning(e.args[0])
             logger.warning("CoverGenerator测试失败，已为您关闭封面生成功能！")
         else:
-            self._hti = Html2Image(output_path=str(config.video_dir),
+            self._hti = Html2Image(output_path=str(config.rsg_video_dir),
                                    browser_executable=config.browser_executable,
                                    disable_logging=True)
 
@@ -106,7 +106,7 @@ class CoverGenerator:
 
 
     def generate(self, live_run: LiveRunData, world_data: WorldData, video_path: Path) -> Path:
-        bg_path = config.video_dir / f'BG world[{world_data.data.id}].jpg'
+        bg_path = config.rsg_video_dir / f'BG world[{world_data.data.id}].jpg'
         font_path = config.template_dir / "fonts" / "JiangChengLvDongHei.ttf"
         corner_image_src = self.get_corner_image_src(live_run)
         # 进入末地和隔墙有眼使用的图片是方块的图片，尺寸更大，CSS样式略有不同
@@ -128,7 +128,7 @@ class CoverGenerator:
             points=points,
         )
         save_as = f'cover world[{world_data.data.id}].jpg'
-        html_path = config.video_dir / f'cover world[{world_data.data.id}].html'
+        html_path = config.rsg_video_dir / f'cover world[{world_data.data.id}].html'
         with open(html_path, 'w', encoding="utf8") as html_file:
             html_file.write(html_content)
         logger.debug(f"封面html文件已生成至{html_path}")

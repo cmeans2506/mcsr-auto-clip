@@ -112,7 +112,7 @@ class DescriptionGenerator:
 ■ 项目信息：
 {self._generate_repository_info()}
 """
-        desc_file_path = config.video_dir / f'desc world[{self._world_data.data.id}].txt'
+        desc_file_path = config.rsg_video_dir / f'desc world[{self._world_data.data.id}].txt'
         with open(desc_file_path, 'w', encoding="utf8") as desc_file:
             desc_file.write(desc)
         logger.debug(f"简介内容已经输出至{desc_file_path}")

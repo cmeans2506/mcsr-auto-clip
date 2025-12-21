@@ -77,7 +77,7 @@ class FfmpegService:
             logger.warning("当前为私人房间，如果未设置'当有人完成时比赛结束'则可能剪辑不准确！")
         sseof_seconds = match_info.result.time // 1000 + config.extra_seconds
         input_extension = Path(video_path).suffix
-        output_file_path = config.video_dir / f"match[{match_info.id_}]{input_extension}"
+        output_file_path = config.ranked_video_dir / f"match[{match_info.id_}]{input_extension}"
         cmd = [
             "ffmpeg",
             "-sseof", f"-{sseof_seconds}",
@@ -150,7 +150,7 @@ class FfmpegService:
     def rsg_cut(live_run: LiveRunData, world_data: WorldData, video_path: Path) -> Path:
         sseof_seconds = live_run.rta + config.extra_seconds
         input_extension = Path(video_path).suffix
-        output_file_path = config.video_dir / f"world[{world_data.data.id}]{input_extension}"
+        output_file_path = config.rsg_video_dir / f"world[{world_data.data.id}]{input_extension}"
         cmd = [
             "ffmpeg",
             "-sseof", f"-{sseof_seconds}",

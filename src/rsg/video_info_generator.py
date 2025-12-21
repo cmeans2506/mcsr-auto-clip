@@ -38,7 +38,7 @@ class VideoInfoGenerator:
         video_title = " ".join(list(filter(None, map(get_event_str, self._live_run.eventList))))
         if (points := self._live_run.get_points()) is not None:
             video_title += f" 积分:{points}"
-        title_file_path = config.video_dir / f'title world[{self._world_data.data.id}].txt'
+        title_file_path = config.rsg_video_dir / f'title world[{self._world_data.data.id}].txt'
         with open(title_file_path, 'w', encoding="utf8") as title_file:
             title_file.write(video_title)
         logger.debug(f"视频标题已经输出至{title_file_path}")

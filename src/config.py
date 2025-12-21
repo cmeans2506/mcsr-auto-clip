@@ -96,8 +96,14 @@ class Config(BaseModel):
 
 
     @property
-    def video_dir(self) -> Path:
-        path = self.base_dir / "mcsr" / datetime.now().strftime("%Y%m%d")
+    def rsg_video_dir(self) -> Path:
+        path = self.base_dir / "rsg" / datetime.now().strftime("%Y%m%d")
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def ranked_video_dir(self) -> Path:
+        path = self.base_dir / "ranked" / datetime.now().strftime("%Y%m%d")
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -139,4 +145,5 @@ with open(Path(__file__).parent.parent / "config" / "config.json", "r", encoding
         exit()
 
 if __name__ == "__main__":
+    print(Config.model_fields["browser_executable"].default)
     print(config)

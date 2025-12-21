@@ -27,7 +27,7 @@ class CoverGenerator:
             logger.warning(e.args[0])
             logger.warning("CoverGenerator测试失败，已为您关闭封面生成功能！")
         else:
-            self._hti = Html2Image(output_path=str(config.video_dir),
+            self._hti = Html2Image(output_path=str(config.ranked_video_dir),
                                    browser_executable=config.browser_executable,
                                    disable_logging=True)
 
@@ -57,7 +57,7 @@ class CoverGenerator:
         logger.info("CoverGenerator检查通过！")
 
     def generate(self, video_path: Path, match_info: MatchInfo) -> Path:
-        bg_path = config.video_dir / f'BG match[{match_info.id_}].jpg'
+        bg_path = config.ranked_video_dir / f'BG match[{match_info.id_}].jpg'
         ranked_icon_path = config.template_dir / "image" / "ranked_icon.png"
         font_path = config.template_dir / "fonts" / "mc.ttf"
         ffmpeg_service.screenshot(video_path=video_path, ss=120, output_path=bg_path)
@@ -75,7 +75,7 @@ class CoverGenerator:
             result_time=util.ts_to_str(match_info.result.time)
         )
         save_as = f'cover match[{match_info.id_}].jpg'
-        html_path = config.video_dir / f'cover match[{match_info.id_}].html'
+        html_path = config.ranked_video_dir / f'cover match[{match_info.id_}].html'
         with open(html_path, 'w', encoding="utf8") as html_file:
             html_file.write(html_content)
         logger.debug(f"封面html文件已生成至{html_path}")

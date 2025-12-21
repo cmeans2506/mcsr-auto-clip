@@ -35,7 +35,7 @@ class VideoInfoGenerator:
             title += " 私人房间"
         title += (f" {translator.seedtype_map[self._match_data.seedType]} "
                   f"{translator.bastion_map[self._match_data.bastionType]}")
-        title_file_path = config.video_dir / f'title match[{self._match_data.id_}].txt'
+        title_file_path = config.ranked_video_dir / f'title match[{self._match_data.id_}].txt'
         with open(title_file_path, 'w', encoding="utf8") as title_file:
             title_file.write(title)
         logger.debug(f"视频标题已经输出至{title_file_path}")
