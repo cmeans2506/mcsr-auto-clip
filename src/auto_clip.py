@@ -25,8 +25,10 @@ class AutoClip:
             self.blocking_scheduler.shutdown()
         self.obs_controller = OBSController(config.host, config.port, on_disconnect=on_disconnect)
 
-        self.blocking_scheduler.add_job(self._ranked_job, 'interval', seconds=10)
-        self.blocking_scheduler.add_job(self._rsg_job, 'interval', seconds=10)
+        if config.ranked_job:
+            self.blocking_scheduler.add_job(self._ranked_job, 'interval', seconds=10)
+        if config.rsg_job:
+            self.blocking_scheduler.add_job(self._rsg_job, 'interval', seconds=10)
         if config.clean_raw_file:
             self.blocking_scheduler.add_job(self.obs_controller.clean, 'interval', minutes=2)
         if config.use_death_clip:
@@ -56,7 +58,8 @@ class AutoClip:
             user_data=user_data,
             video_path=cut_video_path
         )
-        bilibili_uploader.upload(video_info_generator.generate())
+        if config.use_upload:
+            bilibili_uploader.upload(video_info_generator.generate())
 
     def _rsg_job(self):
         live_run = paceman_service.get_latest_run()
@@ -81,7 +84,8 @@ class AutoClip:
         video_info_generator = RsgVideoInfoGenerator(
             live_run=live_run, world_data=world_data, video_path=cut_video_path
         )
-        bilibili_uploader.upload(video_info_generator.generate())
+        if config.use_upload:
+            bilibili_uploader.upload(video_info_generator.generate())
         rsg_pb.check_for_pb(live_run=live_run, world_data=world_data)
 
 

@@ -165,6 +165,6 @@ class BiliUploader:
         with self._lock:
             return util.find_first(lambda u: u.id_ == id_, self._upload_history_list)
 
-bilibili_uploader = BiliUploader()
+bilibili_uploader = BiliUploader() if config.use_upload else None
 if __name__ == "__main__":
     pass

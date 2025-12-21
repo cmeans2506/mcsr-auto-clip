@@ -24,7 +24,7 @@ class DescriptionGenerator:
     def _generate_timelines_info(self):
         def event_to_str(event: Event) -> str:
             event_str = f"{util.ts_to_str(event.igt)}\t{translator.event_map[event.eventId]}"
-            if rsg_pb.is_pb(event):
+            if rsg_pb is not None and rsg_pb.is_pb(event):
                 event_str += " 个人最佳"
             return event_str
 
@@ -32,8 +32,10 @@ class DescriptionGenerator:
         return "\n".join(list(map(event_to_str, event_list)))
 
     def _generate_pb_info(self):
+        if rsg_pb is None:
+            return None
         def get_pb_str(key):
-            if not rsg_pb.pb_info[key].id:
+            if not rsg_pb.pb_info[key].igt:
                 return ""
             pb_time = datetime.fromtimestamp(rsg_pb.pb_info[key].time).strftime("%Y-%m-%d")
             pb_str = (f"·{translator.event_map[key]}\n{util.ts_to_str(rsg_pb.pb_info[key].igt)}"

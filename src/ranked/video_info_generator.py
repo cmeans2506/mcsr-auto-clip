@@ -21,7 +21,8 @@ class VideoInfoGenerator:
         self._user_data = user_data
         self._video_path = video_path
 
-        self._desc_generator = DescriptionGenerator(match_data=match_data, user_data=user_data, video_path=video_path)
+        if config.use_description:
+            self._desc_generator = DescriptionGenerator(match_data=match_data, user_data=user_data, video_path=video_path)
         if config.use_cover:
             self._cover_generator = CoverGenerator()
 
@@ -47,7 +48,8 @@ class VideoInfoGenerator:
                                                                     match_info=self._match_info)
                           if config.use_cover else None,
                           video_title=self._generate_video_title(),
-                          video_desc=self._desc_generator.generate_video_desc(),
+                          video_desc=self._desc_generator.generate_video_desc()
+                          if config.use_description else "",
                           video_tags=["游戏", "单机游戏", "我的世界", "MC", "速通", "MCSR", "RANKED", "速通排位赛"],
                           video_path=self._video_path,
                           )

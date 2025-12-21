@@ -29,7 +29,6 @@ class OBSController:
 
         self._ws = obswebsocket.obsws(host, port, on_disconnect=on_disconnect)
 
-        # _replay_video_list没有什么太特殊的用途，这里直接就用tuple作为list的元素了
         self._replay_video_list: list[OBSController.ReplayItem] = []
         self._lock = threading.Lock()
 

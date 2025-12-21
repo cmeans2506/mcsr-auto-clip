@@ -120,13 +120,18 @@
 
   "browser_executable": "D:/Software/chrome-win/chrome.exe",
   "use_cover": true,
+  "use_description": true,
+  "use_upload": true,
+  "use_rsg_pb": true,
+
   "extra_seconds": 15,
   "wait_for_datapack": 20,
 
   "replay_threshold_seconds": 20,
   "clean_raw_file": true,
   "use_death_clip": true,
+  "ranked_job": true,
+  "rsg_job": true,
   "death_clip_duration": 20,
   "death_clip_ahead_seconds": 0
-
 }

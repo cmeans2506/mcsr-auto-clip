@@ -21,7 +21,8 @@ class VideoInfoGenerator:
         self._world_data = world_data
         self._video_path = video_path
 
-        self._desc_generator = DescriptionGenerator(live_run, world_data, video_path)
+        if config.use_description:
+            self._desc_generator = DescriptionGenerator(live_run, world_data, video_path)
         if config.use_cover:
             self._cover_generator = CoverGenerator()
 
@@ -30,7 +31,7 @@ class VideoInfoGenerator:
             if not event.is_valid_for_upload():
                 return None
             event_str = f"{util.ts_to_str(event.igt)[:5]}{translator.event_map[event.eventId]}"
-            if rsg_pb.is_pb(event):
+            if rsg_pb is not None and rsg_pb.is_pb(event):
                 event_str += "个人最佳"
             return event_str
 
@@ -60,7 +61,8 @@ class VideoInfoGenerator:
                                                       video_path=self._video_path)
             if config.use_cover else None,
             video_title=self._generate_video_title(),
-            video_desc=self._desc_generator.generate_video_desc(),
+            video_desc=self._desc_generator.generate_video_desc()
+            if config.use_description else "",
             video_tags=self._generate_video_tags(),
             video_path=self._video_path
         )

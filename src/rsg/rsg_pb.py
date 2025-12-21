@@ -2,15 +2,15 @@ import json
 from pathlib import Path
 import time
 import threading
+from pydantic import BaseModel
 
 from rsg.paceman_service import Event, paceman_service, LiveRunData, WorldData, EventId
 from bilibili_uploader import bilibili_uploader
-from pydantic import BaseModel
-
+from config import config
 
 class Record(BaseModel):
     id: int = 0
-    igt: int = 1200000
+    igt: int = 0
     bvid: str = ""
     time: int = 0
 
@@ -74,5 +74,5 @@ class RsgPb:
         )
         thread.start()
 
-
-rsg_pb = RsgPb()
+if config.use_rsg_pb:
+    rsg_pb = RsgPb()
