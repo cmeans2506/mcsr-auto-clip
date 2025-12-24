@@ -1,6 +1,29 @@
 import logging
 from datetime import datetime
+from PyQt6.QtCore import QObject, pyqtSignal
+
 from config import config
+
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+class LogSignalHub(QObject):
+    log_signal = pyqtSignal(str, int)
+
+log_signal_hub = LogSignalHub()
+
+class QtLoggingHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.setFormatter(formatter)
+        self.setLevel(logging.INFO)
+
+    def emit(self, record):
+        msg = self.format(record)
+        # 信号发射是线程安全的
+        log_signal_hub.log_signal.emit(msg, record.levelno)
 
 
 def setup_logger(name=None, log_level=logging.DEBUG):
@@ -12,12 +35,6 @@ def setup_logger(name=None, log_level=logging.DEBUG):
         return logger
 
     logger.setLevel(log_level)
-
-    # 日志格式
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
 
     # 控制台输出
     console_handler = logging.StreamHandler()
@@ -31,5 +48,8 @@ def setup_logger(name=None, log_level=logging.DEBUG):
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+
+    qt_logging_handler = QtLoggingHandler()
+    logger.addHandler(qt_logging_handler)
 
     return logger

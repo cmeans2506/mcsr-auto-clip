@@ -7,24 +7,25 @@ from translator import translator
 import util
 from ffmpeg_service import ffmpeg_service
 from rsg.paceman_service import LiveRunData, WorldData, Event, ContextEvent, User, RunData
-from rsg.rsg_pb import rsg_pb
+from rsg.rsg_pb import RsgPb
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
 class DescriptionGenerator:
-    def __init__(self, live_run: LiveRunData, world_data: WorldData, video_path: Path):
+    def __init__(self, live_run: LiveRunData, world_data: WorldData, video_path: Path, rsg_pb: RsgPb):
         self._live_run = live_run
         self._world_data = world_data
         self._video_path = video_path
+        self.rsg_pb = rsg_pb
 
         self._video_info = ffmpeg_service.get_video_info(self._video_path)
 
     def _generate_timelines_info(self):
         def event_to_str(event: Event) -> str:
             event_str = f"{util.ts_to_str(event.igt)}\t{translator.event_map[event.eventId]}"
-            if rsg_pb is not None and rsg_pb.is_pb(event):
+            if config.use_rsg_pb and self.rsg_pb.is_pb(event):
                 event_str += " 个人最佳"
             return event_str
 
@@ -32,19 +33,19 @@ class DescriptionGenerator:
         return "\n".join(list(map(event_to_str, event_list)))
 
     def _generate_pb_info(self):
-        if rsg_pb is None:
+        if not config.use_rsg_pb:
             return None
         def get_pb_str(key):
-            if not rsg_pb.pb_info[key].igt:
+            if not self.rsg_pb.pb_info[key].igt:
                 return ""
-            pb_time = datetime.fromtimestamp(rsg_pb.pb_info[key].time).strftime("%Y-%m-%d")
-            pb_str = (f"·{translator.event_map[key]}\n{util.ts_to_str(rsg_pb.pb_info[key].igt)}"
+            pb_time = datetime.fromtimestamp(self.rsg_pb.pb_info[key].time).strftime("%Y-%m-%d")
+            pb_str = (f"·{translator.event_map[key]}\n{util.ts_to_str(self.rsg_pb.pb_info[key].igt)}"
                       f" | {pb_time}"
-                      f" | 距今{int((time.time() - rsg_pb.pb_info[key].time) / (60 * 60 * 24))}天"
-                      f" | 链接：{rsg_pb.pb_info[key].bvid}")
+                      f" | 距今{int((time.time() - self.rsg_pb.pb_info[key].time) / (60 * 60 * 24))}天"
+                      f" | 链接：{self.rsg_pb.pb_info[key].bvid}")
             return pb_str
 
-        return "\n".join(list(filter(None, map(get_pb_str, rsg_pb.pb_info))))
+        return "\n".join(list(filter(None, map(get_pb_str, self.rsg_pb.pb_info))))
 
     def _generate_upload_reason(self):
         CIRCLE_NUMBERS = "①②③④⑤⑥⑦⑧⑨⑩"

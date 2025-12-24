@@ -15,6 +15,7 @@ from dataclasses import dataclass
 import util
 from config import config
 from logger import setup_logger
+from my_exceptions import BiliupNotConfiguredException, BiliupLogInError, BiliupUploadError
 
 logger = setup_logger(__name__)
 
@@ -40,12 +41,8 @@ class BiliUploader:
 
     def __init__(self):
         self._lock = threading.Lock()
-        try:
-            self._check()
-        except Exception as e:
-            logger.warning(e.args[0])
-            input()
-            exit()
+
+        self.rsg_pb_check_event = threading.Event()
 
         self._upload_history_list: list[BiliUploader.UploadHistoryInfo] = []
         self._up_history_path: Path = config.base_dir / "up_history.json"
@@ -54,9 +51,9 @@ class BiliUploader:
                 self._upload_history_list = [BiliUploader.UploadHistoryInfo(**up_history) for up_history in json.load(up_history_file)]
 
 
-    def _check(self):
+    def check(self):
         if shutil.which("biliup") is None:
-            raise EnvironmentError(f"未找到biliup，请确保已安装biliup并将biliup添加到系统环境变量！")
+            raise BiliupNotConfiguredException()
 
 
         if not (config.base_dir / "cookies.json").exists():
@@ -94,7 +91,7 @@ class BiliUploader:
                 subprocess.run(cmd, check=True, cwd=config.base_dir, creationflags=subprocess.CREATE_NEW_CONSOLE)
             except subprocess.CalledProcessError as e:
                 stop_assist = True
-                raise EnvironmentError(f"登录失败！退出码: {e.returncode}, stderr：{e.stderr}")
+                raise BiliupLogInError(e.returncode, e.stderr)
 
         logger.info("BilibiliUploader检查通过！")
 
@@ -135,7 +132,7 @@ class BiliUploader:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", cwd=config.base_dir)
         except subprocess.CalledProcessError as e:
             logger.warning("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
-            return
+            raise BiliupUploadError(e.returncode, e.stderr)
         aid, bvid = BiliUploader._parse_aid_bvid(result.stdout)
         logger.info(f"{video_info.video_title} 已经上传至{bvid}")
 
@@ -151,8 +148,10 @@ class BiliUploader:
                 )
             )
             self._write_back()
+        self.rsg_pb_check_event.set()
 
     def upload(self, video_info: UploadInfo):
+        self.rsg_pb_check_event.clear()
         thread = threading.Thread(
             target=self._upload_task,
             args=(video_info,),
@@ -165,6 +164,10 @@ class BiliUploader:
         with self._lock:
             return util.find_first(lambda u: u.id_ == id_, self._upload_history_list)
 
-bilibili_uploader = BiliUploader() if config.use_upload else None
+    def get_latest_upload_history(self) -> Optional[UploadHistoryInfo]:
+        with self._lock:
+            return self._upload_history_list[-1] if self._upload_history_list else None
+
+
 if __name__ == "__main__":
     pass

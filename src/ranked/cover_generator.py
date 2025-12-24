@@ -4,7 +4,7 @@ import shutil
 from html2image import Html2Image
 from pathlib import Path
 
-from ranked.ranked_service import MatchInfo, ranked_service
+from ranked.ranked_service import MatchInfo, RankedService
 import util
 from config import config
 from ffmpeg_service import ffmpeg_service
@@ -85,7 +85,11 @@ class CoverGenerator:
         return Path(ret[0])
 
 
-if __name__ == "__main__":
+def main():
+    ranked_service = RankedService()
     cover_generator = CoverGenerator()
     cover_generator.generate(video_path=Path(r"D:\OBS Videos\Replay 2025-12-19 19-07-58.mp4"),
-                             match_info=ranked_service.get_recent_matches()[0])
+                         match_info=ranked_service.get_recent_matches()[0])
+
+if __name__ == "__main__":
+    main()

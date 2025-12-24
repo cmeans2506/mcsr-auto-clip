@@ -175,9 +175,13 @@ cython_debug/
 
 cookies.txt
 cookies.json
+config.json
+pb.json
 
 *.lnk
 
+build.py
+build.bat
 
 .idea/
 

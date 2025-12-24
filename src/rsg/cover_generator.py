@@ -4,12 +4,12 @@ import shutil
 from html2image import Html2Image
 from pathlib import Path
 
-from rsg.paceman_service import WorldData, LiveRunData, Event, paceman_service
+from rsg.paceman_service import WorldData, LiveRunData, Event, PacemanService
 import util
 from config import config
 from ffmpeg_service import ffmpeg_service
 from translator import translator
-from rsg.rsg_pb import rsg_pb
+from rsg.rsg_pb import RsgPb
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -20,7 +20,8 @@ class CoverGenerator:
     _STRONGHOLD_IMAGE_PATH = config.template_dir / "image" / "Mossy_Stone_Bricks.webp"
     _FIRST_PORTAL_IMAGE_PATH = config.template_dir / "image" / "Eye_of_Ender.webp"
 
-    def __init__(self):
+    def __init__(self, rsg_pb: RsgPb):
+        self.rsg_pb = rsg_pb
         template_file_path = config.template_dir / "cover_for_rsg.html"
         with open(template_file_path, "r", encoding="utf8") as template_file:
             self._template = Template(template_file.read())
@@ -75,7 +76,7 @@ class CoverGenerator:
     def generate_event_str_list(self, live_run: LiveRunData) -> list[str]:
         def get_event_str(event: Event):
             event_str = f"{util.ts_to_str(event.igt)[:5]}{translator.event_map[event.eventId]}"
-            if rsg_pb.is_pb(event):
+            if config.use_rsg_pb and self.rsg_pb.is_pb(event):
                 event_str += " PB"
             return event_str
 
@@ -93,7 +94,7 @@ class CoverGenerator:
                                 "rsg.enter_stronghold", "rsg.second_portal", "rsg.enter_fortress", "rsg.enter_bastion"]
             inner_html_map = {element: i for i, element in enumerate(inner_html_order)}
             base_priority = inner_html_map[event.eventId]
-            pb_penalty = 0 if rsg_pb.is_pb(event) else 100
+            pb_penalty = 0 if config.use_rsg_pb and self.rsg_pb.is_pb(event) else 100
             upload_penalty = 0 if event.is_valid_for_upload() else 100
             return base_priority + pb_penalty + upload_penalty
 
@@ -138,8 +139,14 @@ class CoverGenerator:
         return Path(ret[0])
 
 
-if __name__ == "__main__":
+def main():
+    paceman_service = PacemanService()
     cover_generator = CoverGenerator()
     live = paceman_service.get_live_runs()[-1]
     world_data = paceman_service.get_world(live.worldId)
-    cover_generator.generate(video_path=Path(r"D:\OBS Videos\Source Record\2025-04-13 14-41-26.mp4"),live_run=live,world_data=world_data)
+    cover_generator.generate(video_path=Path(r"D:\OBS Videos\Source Record\2025-04-13 14-41-26.mp4"), live_run=live,
+                             world_data=world_data)
+
+if __name__ == "__main__":
+    main()
+

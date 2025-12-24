@@ -8,6 +8,7 @@ import shutil
 
 
 from ranked.ranked_service import MatchInfo, MatchType, MatchData
+from my_exceptions import FfmpegNotConfiguredException
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -22,22 +23,18 @@ class FfmpegService:
         frame_rate: float
         codec_long_name: str
 
-    def __init__(self):
-        try:
-            self._check()
-        except Exception as e:
-            logger.warning(e.args[0])
-            input()
-            exit()
+    # def __init__(self):
+    #     try:
+    #         self.check()
+    #     except Exception as e:
+    #         logger.warning(e.args[0])
+    #         input()
+    #         exit()
 
     @staticmethod
-    def _check():
-        if shutil.which("ffprobe") is None:
-            raise EnvironmentError("未找到ffprobe，请确保已安装FFmpeg并将ffprobe添加到系统环境变量！"
-                                   "（https://github.com/BtbN/FFmpeg-Builds/releases）")
-        if shutil.which("ffmpeg") is None:
-            raise EnvironmentError("未找到ffmpeg，请确保已安装FFmpeg并将ffmpeg添加到系统环境变量！"
-                                   "（https://github.com/BtbN/FFmpeg-Builds/releases）")
+    def check():
+        if shutil.which("ffprobe") is None or shutil.which("ffmpeg") is None:
+            raise FfmpegNotConfiguredException()
 
         logger.info("ffmpeg检查通过！")
 

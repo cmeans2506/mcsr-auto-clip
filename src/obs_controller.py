@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import datetime,timedelta
 import time
 from pathlib import Path
 from typing import Callable, Optional
@@ -7,6 +6,8 @@ import obswebsocket
 from config import config
 import threading
 import logging
+
+from my_exceptions import OBSConnectionException, OBSReplayNotEnableError
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -35,24 +36,26 @@ class OBSController:
         self.replay_path: Path = Path()
         self.replay_buffer_saved_event = threading.Event()
 
-        try:
-            self._ws.connect()
-        except Exception as e:
-            logger.warning("OBS websocket连接失败！请检查主机名和端口号是否配置正确！")
-            logger.warning(e.args[0])
-            input()
-            exit()
-
-        try:
-            self.check_replay_status()
-        except Exception as e:
-            logger.warning(e.args[0])
-            input()
-            exit()
+        # self.start()
 
         self._ws.register(self.on_replay_saved, obswebsocket.events.ReplayBufferSaved)
 
-        logger.info("OBSController检查通过！")
+
+
+    def start(self):
+        try:
+            logger.info("尝试连接到OBS...")
+            self._ws.connect()
+        except Exception as e:
+            raise OBSConnectionException()
+
+        logger.info("OBS连接成功！")
+        self.check_replay_status()
+
+
+    def stop(self):
+        if self._ws.ws:
+            self._ws.disconnect()
 
 
     def on_replay_saved(self, message):
@@ -95,7 +98,7 @@ class OBSController:
         replay_status = self._ws.call(obswebsocket.requests.GetReplayBufferStatus())
 
         if replay_status.datain.get("outputActive") is None:
-            raise Exception("OBS回放缓存未启用！")
+            raise OBSReplayNotEnableError()
 
         if not replay_status.datain["outputActive"]:
             logger.info("回放缓存未开启，尝试启动...")

@@ -7,6 +7,7 @@ from datetime import datetime
 from config import config
 import util as util
 from translator import translator
+from my_exceptions import PlayerNotFoundException, RankedAPIUnavailableError
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -229,47 +230,72 @@ class RankedService:
     _MATCH_API = "https://mcsrranked.com/api/matches/"
     _MATCHES_API_EXTENSION = "/matches"
 
-    def __init__(self, name: str, uuid: str):
+    def __init__(self):
         """
 
         :param name: 玩家名称
         :param uuid: 玩家的uuid
         """
-        self._name = name
-        try:
-            logger.info("正在检验 'player.name' 和 'player.uuid' ")
-            api = f"{RankedService._RANKED_API}{self._name}"
-            response = requests.get(api)
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
-            exit()
-        if response.status_code != 200:
-            logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
-            exit()
-        if response.json()["data"]["uuid"] != uuid:
-            logger.warning(f"在 'config.json' 中配置的 'player.uuid' 有误：{uuid}，"
-                  f"已修正为：{response.json()['data']['uuid']}")
-            uuid = response.json()["data"]["uuid"]
 
-        logger.info("'player.name' 和 'player.uuid' 检验通过！")
+        # try:
+        #     logger.info("正在检验 'player.name' 和 'player.uuid' ")
+        #     api = f"{RankedService._RANKED_API}{self._name}"
+        #     response = requests.get(api)
+        # except requests.exceptions.RequestException as e:
+        #     logger.warning(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
+        #     exit()
+        # if response.status_code != 200:
+        #     logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
+        #     exit()
+        # if response.json()["data"]["uuid"] != uuid:
+        #     logger.warning(f"在 'config.json' 中配置的 'player.uuid' 有误：{uuid}，"
+        #           f"已修正为：{response.json()['data']['uuid']}")
+        #     uuid = response.json()["data"]["uuid"]
+        #
+        # logger.info("'player.name' 和 'player.uuid' 检验通过！")
 
-        self._uuid = uuid
         self._any_clip_matches: list[int] = []
         self._death_clip_matches: list[int] = []
         self._session = requests.Session()
 
+    @staticmethod
+    def get_uuid(name: str) -> str:
+        """
+        请求错误：requests.exceptions.RequestException
+        玩家不存在：requests.exceptions.HTTPError
+        :param name:
+        :return: uuid
+        """
+        logger.info(f"正在获取 {name} 的 uuid ")
+        api = f"{RankedService._RANKED_API}{name}"
+        try:
+            response = requests.get(api)
+            response.raise_for_status()
+            return response.json()["data"]["uuid"]
+        except requests.exceptions.HTTPError:
+            logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
+            raise PlayerNotFoundException(name)
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
+            raise RankedAPIUnavailableError(api, e) from e
+
+
+
     def get_recent_matches(self, match_type: Optional[MatchType] = None, count: int = 50) -> list[MatchInfo]:
-        api = f"{RankedService._RANKED_API}{self._name}{RankedService._MATCHES_API_EXTENSION}?count={count}"
+        api = f"{RankedService._RANKED_API}{config.player.name}{RankedService._MATCHES_API_EXTENSION}?count={count}"
         if match_type is not None:
             api += f"&type={match_type.value}"
         try:
-            data = self._session.get(api).json()
+            response = self._session.get(api)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.HTTPError:
+            logger.warning(f"不存在玩家 '{config.player.name}' ，请检查 'player' 字段是否配置正确")
+            raise PlayerNotFoundException(config.player.name)
         except requests.exceptions.RequestException as e:
             if e.request:
                 logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
             return []
-        if data["status"] != "success":
-            raise RuntimeError(data["data"])
 
         return [MatchInfo(**match_info) for match_info in data["data"]]
 
@@ -283,7 +309,7 @@ class RankedService:
         logger.info(f"最新对局：{latest_match}")
 
         if latest_match.date < config.launch_time:
-            logger.info("比赛时间早于程序启动时间，跳过")
+            logger.info("比赛时间早于脚本启动时间，跳过")
             return None
         if latest_match.result.uuid != config.player.uuid:
             logger.info("比赛未胜利，跳过")
@@ -337,7 +363,7 @@ class RankedService:
 
 
     def get_user_data(self) -> UserData:
-        api = f"{RankedService._RANKED_API}{self._name}"
+        api = f"{RankedService._RANKED_API}{config.player.name}"
         return UserData(**(self._session.get(api).json()["data"]))
 
     def get_match_data(self, id_: int) -> MatchData:
@@ -345,8 +371,11 @@ class RankedService:
         return MatchData(**(self._session.get(api).json()["data"]))
 
 
-ranked_service = RankedService(name=config.player.name, uuid=config.player.uuid)
-if __name__ == "__main__":
+def main():
+    ranked_service = RankedService()
     print(ranked_service.get_latest_match())
     print(ranked_service.get_user_data())
     print(ranked_service.get_match_data(1909310))
+
+if __name__ == "__main__":
+    main()

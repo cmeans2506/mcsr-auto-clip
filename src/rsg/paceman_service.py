@@ -7,6 +7,7 @@ import util
 from util import find_first
 from config import config
 from translator import translator
+from my_exceptions import PacemanAPIUnavailableError
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -69,6 +70,8 @@ class LiveRunData(BaseModel):
         return int(time.time() - self.lastUpdated // 1000 + self.eventList[-1].rta // 1000)
 
     def get_points(self) -> Optional[float]:
+        # 暂时弃用
+        return None
         if self.eventList[-1].eventId != "rsg.credits":
             return None
         # 总完成时间（秒）
@@ -243,13 +246,38 @@ class PacemanService:
         return run
 
 
+    # def get_world(self, world_id: str) -> Optional[WorldData]:
+    #     try:
+    #         data = self._session.get(f"{self._GET_WORLD_API}/?worldId={world_id}").json()
+    #     except requests.exceptions.RequestException as e:
+    #         logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+    #         return None
+    #
+    #     return WorldData(**data)
+
     def get_world(self, world_id: str) -> Optional[WorldData]:
-        try:
-            data = self._session.get(f"{self._GET_WORLD_API}/?worldId={world_id}").json()
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
-            return None
+        max_retries = 3
+        retry_delay = 2
+        attempt = 0
 
-        return WorldData(**data)
+        url = f"{self._GET_WORLD_API}/?worldId={world_id}"
 
-paceman_service = PacemanService()
+        while attempt < max_retries:
+            try:
+                response = self._session.get(url)
+                response.raise_for_status()
+                data = response.json()
+                return WorldData(**data)
+
+            except requests.exceptions.RequestException as e:
+                attempt += 1
+                logger.warning(f"请求失败 (尝试 {attempt}/{max_retries}): {e}")
+
+                if attempt < max_retries:
+                    time.sleep(retry_delay)
+                else:
+                    logger.error(f"达到最大重试次数，请求：{self._GET_WORLD_API} 最终失败")
+                    raise PacemanAPIUnavailableError(url, e) from e
+        return None
+
+# paceman_service = PacemanService()

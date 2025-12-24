@@ -76,15 +76,14 @@ class ChromiumInstaller:
             print(f"extraction failed: {e}")
             raise
 
-    def change_config_file(self):
-        print(f"\nchanging the config file...")
-        config_file_path = Path(__file__).parent.parent.parent / 'config' / 'config.json'
-        with open(config_file_path, 'r', encoding='utf-8') as config_file:
-            config_content = json.load(config_file)
-        config_content['browser_executable'] = self.bin_path.as_posix()
-        with open(config_file_path, 'w', encoding='utf-8') as config_file:
-            json.dump(config_content, config_file, indent=2, ensure_ascii=False)
-
+    # def change_config_file(self):
+    #     print(f"\nchanging the config file...")
+    #     config_file_path = Path(__file__).parent.parent.parent / 'config' / 'config.json'
+    #     with open(config_file_path, 'r', encoding='utf-8') as config_file:
+    #         config_content = json.load(config_file)
+    #     config_content['browser_executable'] = self.bin_path.as_posix()
+    #     with open(config_file_path, 'w', encoding='utf-8') as config_file:
+    #         json.dump(config_content, config_file, indent=2, ensure_ascii=False)
 
 
     def install(self):
@@ -94,7 +93,7 @@ class ChromiumInstaller:
 
         self.extract_chromium()
 
-        self.change_config_file()
+        # self.change_config_file()
 
 
 def main():

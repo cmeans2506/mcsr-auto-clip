@@ -1,9 +1,62 @@
 # MCSR AUTO CLIP
 
-本项目基于 Python3.13 开发，整合 OBS websocket、biliup 和 FFmpeg，实现 Minecraft Speedrun（MCSR）视频的自动切片、封面生成及上传功能。
+这是一个用于自动切片1.16rsg和ranked的脚本， 符合预设的条件就可以自动切片上传，省去后期的时间。
+效果可参考：https://space.bilibili.com/1578160350
+
+本项目基于 Python3.13、OBS websocket、biliup 和 FFmpeg 等技术实现 
 
 
 ## 快速开始
+
+### ① 下载可执行文件
+
+从release中下载 `mcsr auto clip.zip`，解压后会得到两个文件夹 `installer` 和 `main`。`installer`文件中的文件使用来安装相关的依赖工具的。`main`文件夹中的文件是主程序。
+
+### ② 相关依赖的安装
+
+依次运行 `biliup_installer.exe`（上传工具） `chromium_installer.exe`（封面生成工具） `ffmpeg_installer.exe`（剪辑工具），这三个软件的下载都需要科学上网，请确保你的网络状况。
+
+### ③ OBS 配置
+
+1. OBS 中开启WebSocket服务器
+   ```
+   OBS菜单栏 -> 工具 -> WebSocket服务器设置 -> 启用，身份验证关闭
+   ```
+2. 启用回放缓存：
+   ```
+   OBS控制按钮 -> 设置 -> 输出 -> 回放缓存 -> 启用，设置一个合理的回放时长（这个时长是用于剪辑的原素材文件时长，因此需要大于你剪辑成片的长度）
+   ```
+3. 记录 websocket 连接信息（默认：`localhost:4455`）
+
+### ④ 启动切片脚本
+
+填写游戏名称，修改视频文件夹（将你的剪辑成片输出的位置）
+
+保存好后，点击启动，开启脚本。
+
+**请记住！任何修改需要点击保存才能生效！**
+
+大约每10秒钟就在日志中输出paceman和ranked信息就是正常运行了。
+
+关于其他设置，可以在下文的的配置文件说明中找到更详细的解释。
+
+尽力打出你的pace吧！
+
+### ⑤ 备注
+
+- 如果启用了上传功能，脚本会让你登录一个bilibili账号，这个账号是你用于上传视频的账号，推荐使用**扫码登录**，最方便。
+
+- 任何修改需要点击保存才能生效！
+
+- 如果点击启动后显示未找到biliup或未找到ffmpeg，可能是安装失败了或者你的电脑需要重启
+
+- 如果遇到了任何bug，请尽量详细地描述复现这个bug的流程，如果能提供日志是更好的
+
+- 如果想要删除在 `① 下载可执行文件` 中安装的文件，请来到 `C:\Users\<用户名>` 文件夹下，删除 `biliup` 、`chromium` 和 `ffmpeg` 文件夹。此外，还要去系统环境变量中删除`biliup`和`ffmpeg` 可执行文件所在的目录。
+
+---
+
+## 从源代码开始
 
 ### 1. 安装依赖组件
 #### ① OBS 配置
@@ -13,7 +66,7 @@
    ```
 2. 启用回放缓存：
    ```
-   OBS控制按钮 -> 设置 -> 输出 -> 回放缓存 -> 启用，回放时长上限1200秒（回放时长需要大于你剪辑成片的长度）
+   OBS控制按钮 -> 设置 -> 输出 -> 回放缓存 -> 启用，设置一个合理的回放时长（这个时长是用于剪辑的原素材文件时长，因此需要大于你剪辑成片的长度）
    ```
 3. 记录 websocket 连接信息（默认：`localhost:4455`）
 
@@ -25,7 +78,7 @@
 - 双击 `./src/start.bat`
 
 ### 2. 配置文件说明
- `./config/config.json` 文件：
+ `config.json` 文件：
 
 ```json
 {
@@ -55,29 +108,29 @@
   "upload_setting": {
     // 上传配置同上...
   },
-  "base_dir": "D:/视频",
+  "base_dir": "<桌面>/mcsr videos",
 
   "host": "localhost",
   "port": 4455,
 
-  "browser_executable": "D:/Software/chrome-win/chrome.exe",
-  "use_cover": true,
+  "browser_executable": "C:/Users/<用户名>/chromium/chrome-win/chrome.exe",
+  "use_cover": false, 
+  "use_description": false,
+  "use_upload": false,
+  "use_rsg_pb": false,
   "extra_seconds": 15, 
-  "wait_for_datapack": 30,
-  "replay_prefix": "Replay ",
-  "replay_suffix": "",
-  "output_format": "mp4",
-  "filename_formatting": "%Y-%m-%d %H-%M-%S",
-
+  "wait_for_datapack": 20,
   "replay_threshold_seconds": 20,
+  
   "clean_raw_file": true,
-  "use_death_clip": true,
-  "death_clip_duration": 25,
-  "death_clip_ahead_seconds": 0,
-
-  "use_messagebox": true
+  "use_death_clip": true, 
+  "ranked_job": true,
+  "rsg_job": true,
+  "death_clip_duration": 20,
+  "death_clip_ahead_seconds": 0
 }
 ```
+该文件位于 `C:\Users\<用户名>\AppData\Roaming\mcsr auto clip` 文件夹中
 
 #### 配置字段说明
 | 字段                               | 类型      | 说明                                                                       |
@@ -100,20 +153,20 @@
 | `base_dir`                       | String  | 工作目录路径                                                                   |
 | `host`                           | String  | OBS websocket 主机地址                                                       |
 | `port`                           | Number  | OBS websocket 端口                                                         |
-| `browser_executable`             | String  | Chromium 浏览器路径，注意用正斜杠'/'，而不是反斜杠'\\'                                      |
+| `browser_executable`             | String  | Chromium 浏览器路径，注意正斜杠'/'与反斜杠'\\'                                          |
 | `use_cover`                      | Boolean | 是否生成视频封面                                                                 |
+| `use_description`                | Boolean | 是否生成视频简介                                                                 |
+| `use_upload`                     | Boolean | 是否启用上传                                                                   |
+| `use_rsg_pb`                     | Boolean | 是否启用rsg_pb检测功能                                                           |
 | `extra_seconds`                  | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大（秒）        |
 | `wait_for_datapack`              | Number  | rsg完成一场速通后，会等待一段时间再结束录像，期间可以输入种子、datapack list等。默认值为30（秒）                |
-| `replay_prefix`                  | String  | 回放文件名前缀，在OBS设置-录制-高级中可以修改                                                |
-| `replay_suffix`                  | String  | 回放文件名后缀，在OBS设置-录制-高级中可以修改                                                |
-| `filename_formatting`            | String  | 文件名格式，在OBS设置-录制-高级中可以修改                                                  |
-| `output_format`                  | String  | 剪辑后的视频格式，请与录像格式保持一致，否则剪辑时可能出现问题，在OBS设置-输出-录制-录像格式中可以修改                   |
 | `replay_threshold_seconds`       | Number  | 在该数值范围内的录像请求都会共用同一个原始文件                                                  |
 | `clean_raw_file`                 | Boolean | 是否要清理原始文件                                                                |
 | `use_death_clip`                 | Boolean | 是否启用死亡切片                                                                 |
+| `ranked_job`                     | Boolean | 是否启用ranked切片功能                                                           |
+| `rsg_job`                        | Boolean | 是否启用rsg切片功能                                                              |
 | `death_clip_duration`            | Number  | 死亡切片时长（秒）                                                                |
 | `death_clip_ahead_seconds`       | Number  | 切片起始点的提前时间量                                                              |
-| `use_messagebox`                 | Bool    | 上传成功或失败的时候是否需要消息框提示                                                      |
 
  - `clip_setting` 和 `upload_setting` 中的字段是相互对应的
  - 其中，`upload_setting` 中的最大允许时长一定是小于等于 `clip_setting` 中的最大允许时长，否则没有意义（有切片才能上传对吧）
@@ -124,25 +177,25 @@
 
 ---
 
- `./config/pb.json` 文件：
+ `pb.json` 文件：
 存储你的pb信息
 ```json
 {
    "rsg.first_portal": {
         "id": 0,
-        "igt": 1200000,
+        "igt": 0,
         "bvid": "",
         "time": 0
    }
    // 其他配置...
 }
 ```
-
+该文件位于 `C:\Users\<用户名>\AppData\Roaming\mcsr auto clip` 文件夹中
 #### 配置字段说明
 | 字段     | 类型     | 说明                 |
 |--------|--------|--------------------|
 | `id`   | int    | paceman中，本场速通的世界id |
-| `igt`  | int    | igt，单位毫秒，默认20分钟    |
+| `igt`  | int    | igt，单位毫秒，默认0       |
 | `bvid` | String | 本次pb对应的视频          |
 | `time` | int    | 打出本次pb的时间，时间戳，单位秒  |
 
@@ -150,29 +203,30 @@
 ### 3. 目录结构
 项目启动后。会在目录中产生
 - `logs`文件夹，用于脚本输出日志文件
-- `mcsr`文件夹，存储所有 any% 速通比赛视频及相关素材。在这个文件夹中，视频会根据日期进行分类。
+- `rsg`文件夹，存储所有 1.16 any% 速通视频。在这个文件夹中，视频会根据日期进行分类。`world[<世界ID>].mp4`
+- `ranked`文件夹，存储所有 ranked 速通比赛视频。在这个文件夹中，视频会根据日期进行分类。`match[<比赛ID>].mp4`
 - `death_clip`文件夹，用于存储所有死亡切片。在这个文件夹中，视频会根据日期进行分类。只切片不上传。产生`match[<比赛ID>]<时间节点>.mp4`文件。同时同目录下还会产生`filelist.txt`文件，这是用于合并所有切片用到的文件，不要乱动。
 - `up_history.json`上传记录
 ```
 工作目录/
 ├── logs/                  # 日志文件夹
 │   └── mcsr_auto_clip_YYYYMMDD.log
-├── mcsr/                  # 视频存储
+├── rsg/                   # 视频存储
 │   └── YYYYMMDD/          # 按日期分类
-         # ranked
+│       ├── world[<世界ID>].mp4  
+│       ├── BG world[<世界ID>].jpg 
+│       ├── cover world[<世界ID>].jpg 
+│       ├── cover world[<世界ID>].html 
+│       ├── desc world[<世界ID>].txt 
+│       └── title world[<世界ID>].txt 
+├── ranked/                # 视频存储
+│   └── YYYYMMDD/          # 按日期分类
 │       ├── match[<比赛ID>].mp4  
 │       ├── BG match[<比赛ID>].jpg 
 │       ├── cover match[<比赛ID>].jpg 
 │       ├── cover match[<比赛ID>].html 
 │       ├── desc match[<比赛ID>].txt 
-│       ├── title match[<比赛ID>].txt 
-         # rsg
-│       ├── world[<比赛ID>].mp4  
-│       ├── BG world[<比赛ID>].jpg 
-│       ├── cover world[<比赛ID>].jpg 
-│       ├── cover world[<比赛ID>].html 
-│       ├── desc world[<比赛ID>].txt 
-│       └── title world[<比赛ID>].txt 
+│       └── title match[<比赛ID>].txt 
 ├── death_clip/            # 死亡切片
 │   └── YYYYMMDD/          # 按日期分类
 │       ├── match[<比赛ID>]<时间节点>.mp4  

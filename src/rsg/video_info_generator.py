@@ -5,7 +5,7 @@ from typing import Optional
 from rsg.paceman_service import LiveRunData, WorldData, Event
 from rsg.description_generator import DescriptionGenerator
 from rsg.cover_generator import CoverGenerator
-from rsg.rsg_pb import rsg_pb
+from rsg.rsg_pb import RsgPb
 from bilibili_uploader import UploadInfo
 
 import util
@@ -16,22 +16,21 @@ from logger import setup_logger
 logger = setup_logger(__name__)
 
 class VideoInfoGenerator:
-    def __init__(self, live_run: LiveRunData, world_data: WorldData, video_path: Path):
+    def __init__(self, live_run: LiveRunData, world_data: WorldData, video_path: Path, rsg_pb: RsgPb):
         self._live_run = live_run
         self._world_data = world_data
         self._video_path = video_path
+        self.rsg_pb = rsg_pb
 
-        if config.use_description:
-            self._desc_generator = DescriptionGenerator(live_run, world_data, video_path)
-        if config.use_cover:
-            self._cover_generator = CoverGenerator()
+        self._desc_generator = DescriptionGenerator(live_run, world_data, video_path, rsg_pb) if config.use_description else None
+        self._cover_generator = CoverGenerator(rsg_pb) if config.use_cover else None
 
     def _generate_video_title(self):
         def get_event_str(event: Event) -> Optional[str]:
             if not event.is_valid_for_upload():
                 return None
             event_str = f"{util.ts_to_str(event.igt)[:5]}{translator.event_map[event.eventId]}"
-            if rsg_pb is not None and rsg_pb.is_pb(event):
+            if config.use_rsg_pb and self.rsg_pb.is_pb(event):
                 event_str += "个人最佳"
             return event_str
 
@@ -59,10 +58,10 @@ class VideoInfoGenerator:
             cover_path=self._cover_generator.generate(live_run=self._live_run,
                                                       world_data=self._world_data,
                                                       video_path=self._video_path)
-            if config.use_cover else None,
+            if self._cover_generator is not None else None,
             video_title=self._generate_video_title(),
             video_desc=self._desc_generator.generate_video_desc()
-            if config.use_description else "",
+            if self._desc_generator is not None else "",
             video_tags=self._generate_video_tags(),
             video_path=self._video_path
         )
