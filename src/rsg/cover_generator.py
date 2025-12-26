@@ -35,7 +35,7 @@ class CoverGenerator:
             logger.warning("CoverGenerator测试失败，已为您关闭封面生成功能！")
         else:
             self._hti = Html2Image(output_path=str(config.rsg_video_dir),
-                                   browser_executable=config.browser_executable,
+                                   browser_executable=str(config.browser_executable),
                                    disable_logging=True)
 
     @staticmethod
@@ -44,8 +44,9 @@ class CoverGenerator:
             raise EnvironmentError("未找到chrome.exe，请确保已在config.json中配置正确！"
                                    "（https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F1250504%2Fchrome-win.zip?generation=1705968802991678&alt=media）")
 
-        test_hti = Html2Image(output_path=config.base_dir, browser_executable=config.browser_executable,
-                                   disable_logging=True)
+        test_hti = Html2Image(output_path=str(config.base_dir),
+                              browser_executable=str(config.browser_executable),
+                              disable_logging=True)
         save_as = 'helloworld.jpg'
         (config.base_dir / save_as).unlink(missing_ok=True)
         html_content = """

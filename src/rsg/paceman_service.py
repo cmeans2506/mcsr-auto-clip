@@ -206,7 +206,8 @@ class PacemanService:
         live_runs = self.get_live_runs()
 
         def is_my_live_run(world_data: LiveRunData) -> bool:
-            return world_data.nickname == config.player.name and not world_data.isCheated and not world_data.isHidden
+            uuid_without_hyphen = world_data.user.uuid.replace("-", "")
+            return uuid_without_hyphen == config.player.uuid and not world_data.isCheated and not world_data.isHidden
 
         return find_first(is_my_live_run, live_runs)
 

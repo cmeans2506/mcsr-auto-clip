@@ -23,13 +23,6 @@ class FfmpegService:
         frame_rate: float
         codec_long_name: str
 
-    # def __init__(self):
-    #     try:
-    #         self.check()
-    #     except Exception as e:
-    #         logger.warning(e.args[0])
-    #         input()
-    #         exit()
 
     @staticmethod
     def check():
@@ -52,7 +45,8 @@ class FfmpegService:
             str(file_path)
         ]
         logger.debug(f"正在运行: {' '.join(command)}")
-        result = subprocess.run(command, stdout=subprocess.PIPE)
+        result = subprocess.run(command, stdout=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
+        logger.debug(f"ffprobe标准输出：{result.stdout}")
         video_info = json.loads(result.stdout)
         # 提取相关信息
         stream = video_info.get("streams", [])[0]
@@ -76,7 +70,7 @@ class FfmpegService:
         input_extension = Path(video_path).suffix
         output_file_path = config.ranked_video_dir / f"match[{match_info.id_}]{input_extension}"
         cmd = [
-            "ffmpeg",
+            "ffmpeg", "-y",
             "-sseof", f"-{sseof_seconds}",
             "-i", str(video_path),
             "-map", "0",
@@ -85,7 +79,8 @@ class FfmpegService:
             str(output_file_path)
         ]
         logger.debug(f"正在运行: {' '.join(cmd)}")
-        subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        logger.debug(f"ffmpeg标准输出：{result.stdout}")
         logger.info(f"已生成切片{output_file_path}")
         return output_file_path
 
@@ -109,7 +104,7 @@ class FfmpegService:
             sseof_seconds = match_data.result.time // 1000 - death_timeline.time // 1000 + config.death_clip_duration + config.death_clip_ahead_seconds
             output_file_path = config.death_clip_dir / f"match[{match_data.id_}]{death_timeline.time}{input_extension}"
             cmd = [
-                "ffmpeg",
+                "ffmpeg", "-y",
                 "-sseof", f"-{sseof_seconds}",
                 "-t", str(config.death_clip_duration),
                 "-i", str(video_path),
@@ -119,7 +114,8 @@ class FfmpegService:
                 str(output_file_path)
             ]
             logger.debug(f"正在运行: {' '.join(cmd)}")
-            subprocess.run(cmd, capture_output=True)
+            result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            logger.debug(f"ffmpeg标准输出：{result.stdout}")
             logger.info(f"已生成死亡切片{output_file_path}")
             ret.append(output_file_path)
             file_list.append(f"file '{output_file_path.name}'\n")
@@ -131,8 +127,7 @@ class FfmpegService:
     @staticmethod
     def screenshot(video_path: Path, ss: int, output_path: Path):
         cmd = [
-                "ffmpeg",
-                "-y",
+                "ffmpeg", "-y",
                 "-ss", str(ss),
                 "-i", str(video_path),
                 "-update", "1",
@@ -141,7 +136,9 @@ class FfmpegService:
                 str(output_path),
         ]
         logger.debug(f"正在运行: {' '.join(cmd)}")
-        subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        logger.debug(f"ffmpeg标准输出：{result.stdout}")
+        logger.info(f"已生成截图：{str(output_path)}")
 
     @staticmethod
     def rsg_cut(live_run: LiveRunData, world_data: WorldData, video_path: Path) -> Path:
@@ -149,7 +146,7 @@ class FfmpegService:
         input_extension = Path(video_path).suffix
         output_file_path = config.rsg_video_dir / f"world[{world_data.data.id}]{input_extension}"
         cmd = [
-            "ffmpeg",
+            "ffmpeg",  "-y",
             "-sseof", f"-{sseof_seconds}",
             "-i", str(video_path),
             "-map", "0",
@@ -158,7 +155,8 @@ class FfmpegService:
             str(output_file_path)
         ]
         logger.debug(f"正在运行: {' '.join(cmd)}")
-        subprocess.run(cmd, capture_output=True)
+        result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        logger.debug(f"ffmpeg标准输出：{result.stdout}")
         logger.info(f"已生成切片{output_file_path}")
         return output_file_path
 

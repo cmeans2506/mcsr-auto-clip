@@ -111,7 +111,7 @@ class BiliUploader:
     def _write_back(self):
         with open(self._up_history_path, "w", encoding="utf8") as up_history_file:
             history_data = [item.model_dump(by_alias=True) for item in self._upload_history_list]
-            json.dump(history_data, up_history_file, indent=4)
+            json.dump(history_data, up_history_file, indent=4, ensure_ascii=False)
         logger.info("上传历史已写入文件")
 
 
@@ -129,10 +129,13 @@ class BiliUploader:
         logger.info(f"正在上传: {video_info.video_title}")
         logger.debug(f"正在运行: {' '.join(cmd)}")
         try:
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding="utf-8", cwd=config.base_dir)
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True,
+                                    encoding="utf-8", cwd=config.base_dir,
+                                    creationflags=subprocess.CREATE_NO_WINDOW)
         except subprocess.CalledProcessError as e:
             logger.warning("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
             raise BiliupUploadError(e.returncode, e.stderr)
+        logger.debug(f"biliup标准输出：{result.stdout}")
         aid, bvid = BiliUploader._parse_aid_bvid(result.stdout)
         logger.info(f"{video_info.video_title} 已经上传至{bvid}")
 

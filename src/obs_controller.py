@@ -70,17 +70,15 @@ class OBSController:
                 latest_item = self._replay_video_list[-1]
                 if not latest_item.is_expired():
                     return latest_item.path
-        self.replay_buffer_saved_event.clear()
-        self._ws.call(obswebsocket.requests.SaveReplayBuffer())
-        # 等待事件触发
-        if self.replay_buffer_saved_event.wait(timeout):
+            self.replay_buffer_saved_event.clear()
+            self._ws.call(obswebsocket.requests.SaveReplayBuffer())
+            # 等待事件触发
+            if not self.replay_buffer_saved_event.wait(timeout):
+                logger.warning("等待回放保存超时")
+                return None
             logger.info(f"回放已保存到: {self.replay_path}")
-            with self._lock:
-                self._replay_video_list.append(OBSController.ReplayItem(self.replay_path, time.time()))
+            self._replay_video_list.append(OBSController.ReplayItem(self.replay_path, time.time()))
             return self.replay_path
-        else:
-            logger.warning("等待回放保存超时")
-            return None
 
         # # 注销事件监听
         # self._ws.unregister(self.on_replay_saved, obswebsocket.events.ReplayBufferSaved)

@@ -216,6 +216,7 @@ class GameConfigPanel(QWidget):
               f"源文件清理: {self.obs_clean_checkbox.isChecked()}")
 
         config.save()
+        QMessageBox.information(self, "成功", "设置已保存")
 
     def _on_start(self):
         if hasattr(self, "_start_worker") and self._start_worker.isRunning() or auto_clip.is_running:

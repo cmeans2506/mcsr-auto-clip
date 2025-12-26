@@ -45,12 +45,14 @@ class DescriptionGenerator:
     def _generate_match_info(self):
         players = self._match_data.players
         changes = self._match_data.changes
-        match_info_str = f"{players[0].nickname} VS {players[1].nickname}: "
+        match_info_str = ""
+        if len(players) == 2:
+            match_info_str += f"{players[0].nickname} VS {players[1].nickname}\n"
         for ch in changes:
             if ch.change is not None and ch.eloRate is not None:
-                match_info_str += f"""
-{self._match_data.get_player(ch.uuid).nickname:<16}{"胜" if ch.change > 0 else "败"}  ({ch.eloRate}  →  {ch.eloRate + ch.change})
-"""
+                match_info_str += (f"{self._match_data.get_player(ch.uuid).nickname:<16}"
+                                   f"{'胜' if ch.change > 0 else '败'}  "
+                                   f"({ch.eloRate}  →  {ch.eloRate + ch.change})\n")
         match_info_str +=f"""
 比赛模式: {translator.match_type_map[self._match_data.type_.name]}
 当前赛季: {self._match_data.season}
@@ -103,7 +105,7 @@ elo排名：{self._user_data.eloRank}
 编码器类型：{self._video_info.codec_long_name}"""
 
     def _generate_repository_info(self):
-        return """MCSR AUTO CLIP by @-Cmeans- (https://b23.tv/VyvEo6u) 
+        return """MCSR AUTO CLIP by Cmeans
 开源地址：https://github.com/cmeans2506/mcsr-auto-clip
 """
 

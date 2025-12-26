@@ -6,7 +6,7 @@ import shutil
 import sys
 import os
 
-VERSION = "v1.0.0"
+VERSION = "v1.0.1"
 app_name = "mcsr auto clip"
 config_dir = Path(os.environ["APPDATA"]) / app_name
 config_dir.mkdir(parents=True, exist_ok=True)

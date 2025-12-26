@@ -42,7 +42,7 @@ class DescriptionGenerator:
             pb_str = (f"·{translator.event_map[key]}\n{util.ts_to_str(self.rsg_pb.pb_info[key].igt)}"
                       f" | {pb_time}"
                       f" | 距今{int((time.time() - self.rsg_pb.pb_info[key].time) / (60 * 60 * 24))}天"
-                      f" | 链接：{self.rsg_pb.pb_info[key].bvid}")
+                      f" | 链接：{self.rsg_pb.pb_info[key].bvid or '无'}")
             return pb_str
 
         return "\n".join(list(filter(None, map(get_pb_str, self.rsg_pb.pb_info))))
@@ -87,7 +87,7 @@ class DescriptionGenerator:
 编码器类型：{self._video_info.codec_long_name}"""
 
     def _generate_repository_info(self):
-        return """MCSR AUTO CLIP by @-Cmeans- (https://b23.tv/VyvEo6u) 
+        return """MCSR AUTO CLIP by Cmeans
 开源地址：https://github.com/cmeans2506/mcsr-auto-clip
 """
 
