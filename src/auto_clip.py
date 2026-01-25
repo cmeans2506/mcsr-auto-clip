@@ -140,7 +140,10 @@ class AutoClip:
         if self.obs_controller is None:
             self.obs_controller = OBSController(config.host, config.port, on_disconnect=self.on_obs_disconnect)
         self.obs_controller.start()
-        config.player.uuid = RankedService.get_uuid(config.player.name)
+        if config.ranked_job or config.use_death_clip:
+            config.player.uuid = RankedService.get_uuid(config.player.name)
+        else:
+            config.player.uuid = RankedService.get_uuid_mojang(config.player.name)
         if config.use_upload:
             self.bili_uploader.check()
         ffmpeg_service.check()

@@ -6,7 +6,7 @@ import shutil
 import sys
 import os
 
-VERSION = "v1.0.1"
+VERSION = "v1.0.2"
 app_name = "mcsr auto clip"
 config_dir = Path(os.environ["APPDATA"]) / app_name
 config_dir.mkdir(parents=True, exist_ok=True)
@@ -90,13 +90,14 @@ class Config(BaseModel):
     host: str = Field(default="localhost")
     port: int = Field(default=4455)
 
-    browser_executable: Path = Field(default=Path.home() / "chromium" / "chrome-win" / "chrome.exe")
+    auto_start: bool = Field(default=False)
     use_cover: bool = Field(default=False)
     use_description: bool = Field(default=False)
     use_upload: bool = Field(default=False)
     use_rsg_pb: bool = Field(default=False)
 
-    extra_seconds: int = Field(default=15)
+    extra_seconds_ranked: int = Field(default=15)
+    extra_seconds_rsg: int = Field(default=0)
     wait_for_datapack: int = Field(default=20)
 
     replay_threshold_seconds: int = Field(default=20)
@@ -132,6 +133,11 @@ class Config(BaseModel):
     @property
     def template_dir(self) -> Path:
         path = self.working_dir / "templates"
+        return path
+
+    @property
+    def assets_dir(self) -> Path:
+        path = self.working_dir / "assets"
         return path
 
     @property

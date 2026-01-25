@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 import requests
 from enum import Enum
 from datetime import datetime
+from functools import cache
 
 from config import config
 import util as util
@@ -237,28 +238,12 @@ class RankedService:
         :param uuid: 玩家的uuid
         """
 
-        # try:
-        #     logger.info("正在检验 'player.name' 和 'player.uuid' ")
-        #     api = f"{RankedService._RANKED_API}{self._name}"
-        #     response = requests.get(api)
-        # except requests.exceptions.RequestException as e:
-        #     logger.warning(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
-        #     exit()
-        # if response.status_code != 200:
-        #     logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
-        #     exit()
-        # if response.json()["data"]["uuid"] != uuid:
-        #     logger.warning(f"在 'config.json' 中配置的 'player.uuid' 有误：{uuid}，"
-        #           f"已修正为：{response.json()['data']['uuid']}")
-        #     uuid = response.json()["data"]["uuid"]
-        #
-        # logger.info("'player.name' 和 'player.uuid' 检验通过！")
-
         self._any_clip_matches: list[int] = []
         self._death_clip_matches: list[int] = []
         self._session = requests.Session()
 
     @staticmethod
+    @cache
     def get_uuid(name: str) -> str:
         """
         请求错误：requests.exceptions.RequestException
@@ -270,15 +255,40 @@ class RankedService:
         api = f"{RankedService._RANKED_API}{name}"
         try:
             response = requests.get(api)
+
+            if response.status_code == 400:
+                logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
+                raise PlayerNotFoundException(name)
+
             response.raise_for_status()
             return response.json()["data"]["uuid"]
-        except requests.exceptions.HTTPError:
-            logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
-            raise PlayerNotFoundException(name)
         except requests.exceptions.RequestException as e:
             logger.warning(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
             raise RankedAPIUnavailableError(api, e) from e
 
+    @staticmethod
+    @cache
+    def get_uuid_mojang(name: str) -> str:
+        logger.info(f"正在从 Mojang 获取 {name} 的 uuid")
+        api = f"https://api.mojang.com/users/profiles/minecraft/{name}"
+
+        try:
+            response = requests.get(api, timeout=10)
+            if response.status_code == 204:
+                logger.warning(f"Mojang api 未找到玩家 '{name}'")
+                raise PlayerNotFoundException(name)
+            response.raise_for_status()
+            data = response.json()
+            return data["id"]
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                logger.error("请求 Mojang API 过于频繁，请稍后再试")
+            elif e.response.status_code == 404:
+                raise PlayerNotFoundException(name)
+            raise
+        except Exception as e:
+            logger.error(f"访问 Mojang API 时出错: {e}")
+            raise
 
 
     def get_recent_matches(self, match_type: Optional[MatchType] = None, count: int = 50) -> list[MatchInfo]:

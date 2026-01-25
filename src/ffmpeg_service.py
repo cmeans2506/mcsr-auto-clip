@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import subprocess
 import json
@@ -14,19 +15,22 @@ from logger import setup_logger
 logger = setup_logger(__name__)
 
 class FfmpegService:
+    FFMPEG_PATH = config.assets_dir / "ffmpeg" / "bin" / "ffmpeg.exe"
+    FFPROBE_PATH = config.assets_dir / "ffmpeg" / "bin" / "ffprobe.exe"
+
     @dataclass
     class VideoInfo:
         width: int
         height: int
-        size: float
-        bit_rate: int
-        frame_rate: float
-        codec_long_name: str
+        size: int       # MB
+        bit_rate: int   # kbps
+        frame_rate: int
+        codec_name: str
 
 
     @staticmethod
     def check():
-        if shutil.which("ffprobe") is None or shutil.which("ffmpeg") is None:
+        if shutil.which(FfmpegService.FFPROBE_PATH) is None or shutil.which(FfmpegService.FFMPEG_PATH) is None:
             raise FfmpegNotConfiguredException()
 
         logger.info("ffmpeg检查通过！")
@@ -36,10 +40,10 @@ class FfmpegService:
     def get_video_info(file_path: Path) -> VideoInfo:
         logger.debug(f"正在获取视频{file_path}的信息")
         command = [
-            "ffprobe",
+            str(FfmpegService.FFPROBE_PATH),
             "-v", "error",  # 只输出错误信息
             "-select_streams", "v:0",  # 只选择第一个视频流
-            "-show_entries", "stream=width,height,r_frame_rate,bit_rate,duration,codec_long_name",  # 选择需要的字段
+            "-show_entries", "stream=width,height,r_frame_rate,bit_rate,duration,codec_name",  # 选择需要的字段
             "-show_format",  # 获取文件格式信息
             "-print_format", "json",
             str(file_path)
@@ -49,16 +53,18 @@ class FfmpegService:
         logger.debug(f"ffprobe标准输出：{result.stdout}")
         video_info = json.loads(result.stdout)
         # 提取相关信息
-        stream = video_info.get("streams", [])[0]
-        format_info = video_info.get("format", {})
+        stream = video_info["streams"][0]
+        format_info = video_info["format"]
 
+        # 在网络传输和多媒体领域，标准做法是使用 10 进制
+        # 而在存储和内存领域，标准做法是使用 2 进制
         return FfmpegService.VideoInfo(
-            width=stream.get("width"),
-            height=stream.get("height"),
-            size=float(format_info.get("size", 0)),
-            bit_rate=int(format_info.get("bit_rate", 0)), # 单位 bps
-            frame_rate=eval(stream.get("r_frame_rate", "0")),  # 转换帧率为浮点数
-            codec_long_name=stream.get("codec_long_name")
+            width=stream["width"],
+            height=stream["height"],
+            size=int(os.path.getsize(file_path) / (1024 * 1024)),
+            bit_rate=int(format_info["bit_rate"]) // 1000,
+            frame_rate=int(eval(stream["r_frame_rate"])),
+            codec_name=stream["codec_name"]
         )
 
 
@@ -66,11 +72,11 @@ class FfmpegService:
     def auto_cut(match_info: MatchInfo, video_path: Path) -> Path:
         if match_info.type_ == MatchType.PRIVATE_ROOM_MATCH:
             logger.warning("当前为私人房间，如果未设置'当有人完成时比赛结束'则可能剪辑不准确！")
-        sseof_seconds = match_info.result.time // 1000 + config.extra_seconds
+        sseof_seconds = match_info.result.time // 1000 + config.extra_seconds_ranked
         input_extension = Path(video_path).suffix
         output_file_path = config.ranked_video_dir / f"match[{match_info.id_}]{input_extension}"
         cmd = [
-            "ffmpeg", "-y",
+            str(FfmpegService.FFMPEG_PATH), "-y",
             "-sseof", f"-{sseof_seconds}",
             "-i", str(video_path),
             "-map", "0",
@@ -104,7 +110,7 @@ class FfmpegService:
             sseof_seconds = match_data.result.time // 1000 - death_timeline.time // 1000 + config.death_clip_duration + config.death_clip_ahead_seconds
             output_file_path = config.death_clip_dir / f"match[{match_data.id_}]{death_timeline.time}{input_extension}"
             cmd = [
-                "ffmpeg", "-y",
+                str(FfmpegService.FFMPEG_PATH), "-y",
                 "-sseof", f"-{sseof_seconds}",
                 "-t", str(config.death_clip_duration),
                 "-i", str(video_path),
@@ -127,8 +133,9 @@ class FfmpegService:
     @staticmethod
     def screenshot(video_path: Path, ss: int, output_path: Path):
         cmd = [
-                "ffmpeg", "-y",
+                str(FfmpegService.FFMPEG_PATH), "-y",
                 "-ss", str(ss),
+                "-discard", "nokey", # 丢弃非关键帧，无需精确定位到 ss 的位置，提速 (0.26s -> 0.09s)
                 "-i", str(video_path),
                 "-update", "1",
                 "-q:v", "1",
@@ -142,11 +149,11 @@ class FfmpegService:
 
     @staticmethod
     def rsg_cut(live_run: LiveRunData, world_data: WorldData, video_path: Path) -> Path:
-        sseof_seconds = live_run.rta + config.extra_seconds
+        sseof_seconds = live_run.rta + config.extra_seconds_rsg
         input_extension = Path(video_path).suffix
         output_file_path = config.rsg_video_dir / f"world[{world_data.data.id}]{input_extension}"
         cmd = [
-            "ffmpeg",  "-y",
+            str(FfmpegService.FFMPEG_PATH),  "-y",
             "-sseof", f"-{sseof_seconds}",
             "-i", str(video_path),
             "-map", "0",

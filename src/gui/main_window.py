@@ -11,7 +11,7 @@ from gui.panels.log_viewer_panel import LogViewerPanel
 
 from auto_clip import auto_clip, scheduler_error_notifier
 
-from config import VERSION
+from config import VERSION, config
 
 
 class MainWindow(QMainWindow):
@@ -43,6 +43,9 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.tab6, "日志")
 
         scheduler_error_notifier.signal.connect(self._on_job_error)
+
+        if config.auto_start:
+            self.tab2._on_start()
 
     def create_tab(self):
         tab = QWidget()

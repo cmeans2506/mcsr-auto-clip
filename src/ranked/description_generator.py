@@ -1,37 +1,53 @@
+import inspect
 from pathlib import Path
 from datetime import datetime
+from string import Template
 
 from config import config
 from translator import translator
 import util
-from ffmpeg_service import ffmpeg_service
-from ranked.ranked_service import UserData, MatchData
+from ranked.ranked_service import UserData, MatchData, RankedService
+from base.base_description_generator import BaseDescriptionGenerator
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class DescriptionGenerator:
+class DescriptionGenerator(BaseDescriptionGenerator):
     def __init__(self, match_data: MatchData, user_data: UserData, video_path: Path):
+        super().__init__(video_path=video_path)
         self._match_data = match_data
         self._user_data = user_data
-        self._video_path = video_path
 
-        self._video_info = ffmpeg_service.get_video_info(self._video_path)
+        self.sub_template = Template(inspect.cleandoc("""        
+
+            ■ 分段详情
+            $timelines_info
+            
+            ■ 比赛详情
+            $match_info
+            
+            ■ 个人信息
+            $user_info
+        
+        """))
+
 
     def _generate_timelines_info(self):
         def timeline_to_str(timeline: MatchData.Timeline) -> str:
-            if timeline.uuid != config.player.uuid or translator.timeline_map.get(timeline.type_) is None:
+            event_label = translator.timeline_map.get(timeline.type_)
+            if timeline.uuid != config.player.uuid or not event_label:
                 return ""
 
-            split = f"{util.ts_to_str(timeline.time)}    {translator.timeline_map[timeline.type_]}"
-            opponent_timeline = self._match_data.get_opponent_timeline(timeline.type_)
-            if opponent_timeline is None:
-                return split
+            time_str = util.ts_to_str_sec(timeline.time)
+            opp_tl = self._match_data.get_opponent_timeline(timeline.type_)
 
-            time_delta = util.ts_to_str(abs(timeline.time - opponent_timeline.time))
-            sign = "-" if timeline.time < opponent_timeline.time else "+"
-            split += f"({sign}{time_delta})"
-            return split
+            delta_str = ""
+            if opp_tl:
+                sign = "-" if timeline.time < opp_tl.time else "+"
+                diff_val = util.ts_to_str_sec(abs(timeline.time - opp_tl.time))
+                delta_str = f"({sign}{diff_val})"
+
+            return f"{time_str} {event_label} {delta_str}"
 
         timelines = self._match_data.timelines
         timelines_info_list = [
@@ -39,103 +55,89 @@ class DescriptionGenerator:
             for timeline in reversed(timelines)
             if (timelines_info := timeline_to_str(timeline=timeline)) != ""
         ]
-        return "\n".join(timelines_info_list)
+        return " || ".join(timelines_info_list)
 
-
+    # Cmeans VS alkasm
+    # 排位模式 / S9 / 2026-01-01 22:54:07 / 沉船 / 居住区
     def _generate_match_info(self):
         players = self._match_data.players
-        changes = self._match_data.changes
-        match_info_str = ""
-        if len(players) == 2:
-            match_info_str += f"{players[0].nickname} VS {players[1].nickname}\n"
-        for ch in changes:
-            if ch.change is not None and ch.eloRate is not None:
-                match_info_str += (f"{self._match_data.get_player(ch.uuid).nickname:<16}"
-                                   f"{'胜' if ch.change > 0 else '败'}  "
-                                   f"({ch.eloRate}  →  {ch.eloRate + ch.change})\n")
-        match_info_str +=f"""
-比赛模式: {translator.match_type_map[self._match_data.type_.name]}
-当前赛季: {self._match_data.season}
-比赛时间: {datetime.fromtimestamp(self._match_data.date).strftime("%Y-%m-%d %H:%M:%S")}
-种子类型: {translator.seedtype_map[self._match_data.seedType]}
-猪堡类型: {translator.bastion_map[self._match_data.bastionType]}"""
-        return match_info_str
 
+        tmpl = inspect.cleandoc("""
+        
+        {players_line}
+        {match_type} / S{season} / {date} / {seedtype} / {bastion}
+        
+        """)
 
+        return tmpl.format(
+            players_line=" VS ".join([p.nickname for p in players]),
+            match_type=translator.match_type_map[self._match_data.type_.name],
+            season=self._match_data.season,
+            date=datetime.fromtimestamp(self._match_data.date).strftime("%Y-%m-%d %H:%M:%S"),
+            seedtype=translator.seedtype_map[self._match_data.seedType],
+            bastion=translator.bastion_map[self._match_data.bastionType]
+        )
+
+    # Cmeans 1279(1573 peak) #1548 pb: 08:57 avg: 13:19 184h 胜：42% 投：13%
     def _generate_user_info(self):
         total_match_count = self._user_data.statistics.season.playedMatches.ranked
-        if total_match_count == 0:
-            return f"""MC名称：{self._user_data.nickname}
-elo分：{self._user_data.eloRate}
-elo排名：{self._user_data.eloRank}"""
-
         season_stats = self._user_data.statistics.season
-        return f"""MC名称：{self._user_data.nickname}
-elo分：{self._user_data.eloRate}
-elo排名：{self._user_data.eloRank}
-个人最佳：{util.ts_to_str(season_stats.bestTime.ranked)}
-最高连胜：{season_stats.highestWinStreak.ranked}
-总场次数：{total_match_count}
-游玩时长：{int(season_stats.playtime.ranked / (1000 * 60 * 60))}小时
-平均完成：{util.ts_to_str(season_stats.completionTime.ranked // season_stats.completions.ranked)}
-投降场次：{season_stats.forfeits.ranked} ({round(100 * season_stats.forfeits.ranked / total_match_count, 2)}%)
-完成场次：{season_stats.completions.ranked} ({round(100 * season_stats.completions.ranked / total_match_count, 2)}%)
-胜利场次：{season_stats.wins.ranked} ({round(100 * season_stats.wins.ranked / total_match_count, 2)}%)
-失败场次：{season_stats.loses.ranked} ({round(100 * season_stats.loses.ranked / total_match_count, 2)}%)
-本赛季最高：{self._user_data.seasonResult.highest}
-本赛季最低：{self._user_data.seasonResult.lowest}"""
 
+        avg = win_rate = ff_rate = 'N/A'
+        if total_match_count != 0:
+            avg = util.ts_to_str_sec(season_stats.completionTime.ranked // season_stats.completions.ranked)
+            win_rate = round(100 * season_stats.wins.ranked / total_match_count, 1)
+            ff_rate = round(100 * season_stats.forfeits.ranked / total_match_count, 1)
 
-    def _generate_upload_reason(self):
-        upload_reason = f"①sub{util.ts_to_str(config.upload_setting.ranked[self._match_data.type_.name].max_time)}"
+        tmpl = ("{nickname} {eloRate} #{eloRank} {highest}peak {playtime}h "
+                "pb: {pb} avg: {avg} 胜: {win_rate}% 投: {ff_rate}% 总: {total_match_count}")
+
+        return tmpl.format(
+            nickname=self._user_data.nickname,
+            eloRate=self._user_data.eloRate,
+            highest=self._user_data.seasonResult.highest,
+            eloRank=self._user_data.eloRank,
+            pb=util.ts_to_str_sec(season_stats.bestTime.ranked),
+            avg=avg,
+            playtime=round(season_stats.playtime.ranked / (1000 * 60 * 60), 1),
+            win_rate=win_rate,
+            ff_rate=ff_rate,
+            total_match_count=total_match_count
+        )
+
+    def generate_upload_reason(self):
+        max_time = util.ts_to_str_sec(config.upload_setting.ranked[self._match_data.type_.name].max_time)
+        upload_reason = f"①sub {max_time}"
         return upload_reason
 
 
-    def _generate_about_info(self):
-        return f""" · 本场速通详细信息：https://mcsrrankedstats.vercel.app/{config.player.name}/{self._match_data.id_}/
- · 更多详情：https://mcsrranked.com/api/matches/{self._match_data.id_}"""
+    def generate_about_info(self):
+        return inspect.cleandoc(f"""
+        
+             · 可视化：https://mcsrrankedstats.vercel.app/{config.player.name}/{self._match_data.id_}/
+             · api：https://mcsrranked.com/api/matches/{self._match_data.id_}
+             
+        """)
+
+    def generate_sub_template(self) -> str:
+        return self.sub_template.safe_substitute(
+            timelines_info=self._generate_timelines_info(),
+            match_info=self._generate_match_info(),
+            user_info=self._generate_user_info()
+        )
+
+    def get_desc_path(self) -> Path:
+        return config.ranked_video_dir / f'desc[{self._match_data.id_}].txt'
 
 
-    def _generate_video_info(self):
-        return f"""宽度：{self._video_info.width}
-高度：{self._video_info.height}
-帧率：{self._video_info.frame_rate}
-码率：{int(self._video_info.bit_rate / 1024)}kbps
-文件大小：{int(self._video_info.size / (1024 * 1024))}MB
-编码器类型：{self._video_info.codec_long_name}"""
+def main():
+    ranked_service = RankedService()
+    desc_generator = DescriptionGenerator(
+        video_path=Path(r"D:\OBS Videos\2025-06-27 19-24-48.mp4"),
+        match_data=ranked_service.get_match_data(5330969),
+        user_data=ranked_service.get_user_data()
+    )
+    print(desc_generator.generate())
 
-    def _generate_repository_info(self):
-        return """MCSR AUTO CLIP by Cmeans
-开源地址：https://github.com/cmeans2506/mcsr-auto-clip
-"""
-
-    def generate_video_desc(self):
-        desc = f"""本视频为自动投稿
-{'大会员请开4K' if self._video_info.height > 1600 else ''}
-
-■ 分段详情：
-{self._generate_timelines_info()}
-
-■ 比赛详情：
-{self._generate_match_info()}
-
-■ 个人信息（本赛季排位模式）：
-{self._generate_user_info()}
-
-■ 投稿条件：
-{self._generate_upload_reason()}
-
-■ 相关链接：
-{self._generate_about_info()}
-
-■ 视频信息：
-{self._generate_video_info()}
-
-■ 项目信息：
-{self._generate_repository_info()}
-"""
-        desc_file_path = config.ranked_video_dir / f'desc match[{self._match_data.id_}].txt'
-        with open(desc_file_path, 'w', encoding="utf8") as desc_file:
-            desc_file.write(desc)
-        logger.debug(f"简介内容已经输出至{desc_file_path}")
-        return desc
+if __name__ == "__main__":
+    main()

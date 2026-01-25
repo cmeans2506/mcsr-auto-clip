@@ -19,10 +19,12 @@ from my_exceptions import BiliupNotConfiguredException, BiliupLogInError, Biliup
 
 logger = setup_logger(__name__)
 
+VideoType = Literal["RANKED", "RSG"]
+
 @dataclass
 class UploadInfo:
     id: int
-    type: Literal["RANKED", "RSG"]
+    type: VideoType
     cover_path: Optional[Path]
     video_title: str
     video_desc: str
@@ -31,6 +33,8 @@ class UploadInfo:
 
 
 class BiliUploader:
+    BILIUP_PATH = config.assets_dir / "biliup" / "biliup.exe"
+
     class UploadHistoryInfo(BaseModel):
         id_: int = Field(alias='id')
         type_: str = Field(alias='type')
@@ -52,7 +56,7 @@ class BiliUploader:
 
 
     def check(self):
-        if shutil.which("biliup") is None:
+        if shutil.which(BiliUploader.BILIUP_PATH) is None:
             raise BiliupNotConfiguredException()
 
 
@@ -61,7 +65,7 @@ class BiliUploader:
             qrcode_path.unlink(missing_ok=True)
             logger.debug(f"清理了{qrcode_path}")
             logger.warning(f"biliup未登录，请选择用于上传视频的账号登录！推荐选择扫码登录！")
-            cmd = ["biliup", "login"]
+            cmd = [str(BiliUploader.BILIUP_PATH), "login"]
             logger.debug(f"正在运行: {' '.join(cmd)}")
             try:
                 stop_assist = False
@@ -117,7 +121,7 @@ class BiliUploader:
 
     def _upload_task(self, video_info: UploadInfo):
         cmd = [
-            "biliup", "upload",
+            str(BiliUploader.BILIUP_PATH), "upload",
             "--copyright", "1",
             "--tid", "17",
             *(["--cover", str(video_info.cover_path)] if config.use_cover else []),

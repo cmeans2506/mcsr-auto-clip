@@ -2,6 +2,7 @@
 
 这是一个用于自动切片1.16rsg和ranked的脚本， 符合预设的条件就可以自动切片上传，省去后期的时间。
 效果可参考：https://space.bilibili.com/1578160350
+使用教程：https://www.bilibili.com/video/BV1zDBXBkETV
 
 本项目基于 Python3.13、OBS websocket、biliup 和 FFmpeg 等技术实现 
 
@@ -10,13 +11,9 @@
 
 ### ① 下载可执行文件
 
-从release中下载 `mcsr auto clip.zip`，解压后会得到两个文件夹 `installer` 和 `main`。`installer`文件中的文件使用来安装相关的依赖工具的。`main`文件夹中的文件是主程序。
+从release中下载 `mcsr auto clip.zip`，解压后会得到一个文件夹`main`。`main`文件夹中的文件是主程序。
 
-### ② 相关依赖的安装
-
-依次运行 `biliup_installer.exe`（上传工具） `chromium_installer.exe`（封面生成工具） `ffmpeg_installer.exe`（剪辑工具），这三个软件的下载都需要科学上网，请确保你的网络状况。
-
-### ③ OBS 配置
+### ② OBS 配置
 
 1. OBS 中开启WebSocket服务器
    ```
@@ -28,7 +25,7 @@
    ```
 3. 记录 websocket 连接信息（默认：`localhost:4455`）
 
-### ④ 启动切片脚本
+### ③ 启动切片脚本
 
 填写游戏名称，修改视频文件夹（将你的剪辑成片输出的位置）
 
@@ -42,7 +39,7 @@
 
 尽力打出你的pace吧！
 
-### ⑤ 备注
+### ④ 备注
 
 - 如果启用了上传功能，脚本会让你登录一个bilibili账号，这个账号是你用于上传视频的账号，推荐使用**扫码登录**，最方便。
 
@@ -51,8 +48,6 @@
 - 如果点击启动后显示未找到biliup或未找到ffmpeg，可能是安装失败了或者你的电脑需要重启
 
 - 如果遇到了任何bug，请尽量详细地描述复现这个bug的流程，如果能提供日志是更好的
-
-- 如果想要删除在 `① 下载可执行文件` 中安装的文件，请来到 `C:\Users\<用户名>` 文件夹下，删除 `biliup` 、`chromium` 和 `ffmpeg` 文件夹。此外，还要去系统环境变量中删除`biliup`和`ffmpeg` 可执行文件所在的目录。
 
 ---
 
@@ -113,12 +108,13 @@
   "host": "localhost",
   "port": 4455,
 
-  "browser_executable": "C:/Users/<用户名>/chromium/chrome-win/chrome.exe",
+  "auto_start": true,
   "use_cover": false, 
   "use_description": false,
   "use_upload": false,
   "use_rsg_pb": false,
-  "extra_seconds": 15, 
+  "extra_seconds_ranked": 15,
+  "extra_seconds_rsg": 0,
   "wait_for_datapack": 20,
   "replay_threshold_seconds": 20,
   
@@ -153,12 +149,13 @@
 | `base_dir`                       | String  | 工作目录路径                                                                   |
 | `host`                           | String  | OBS websocket 主机地址                                                       |
 | `port`                           | Number  | OBS websocket 端口                                                         |
-| `browser_executable`             | String  | Chromium 浏览器路径，注意正斜杠'/'与反斜杠'\\'                                          |
+| `auto_start`                     | Boolean | 是否自动启动脚本                                                                 |
 | `use_cover`                      | Boolean | 是否生成视频封面                                                                 |
 | `use_description`                | Boolean | 是否生成视频简介                                                                 |
 | `use_upload`                     | Boolean | 是否启用上传                                                                   |
 | `use_rsg_pb`                     | Boolean | 是否启用rsg_pb检测功能                                                           |
-| `extra_seconds`                  | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大（秒）        |
+| `extra_seconds_ranked`           | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大（秒）        |
+| `extra_seconds_rsg`              | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为0，如果剪漏了可以适当调大（秒）         |
 | `wait_for_datapack`              | Number  | rsg完成一场速通后，会等待一段时间再结束录像，期间可以输入种子、datapack list等。默认值为30（秒）                |
 | `replay_threshold_seconds`       | Number  | 在该数值范围内的录像请求都会共用同一个原始文件                                                  |
 | `clean_raw_file`                 | Boolean | 是否要清理原始文件                                                                |
@@ -214,19 +211,19 @@
 ├── rsg/                   # 视频存储
 │   └── YYYYMMDD/          # 按日期分类
 │       ├── world[<世界ID>].mp4  
-│       ├── BG world[<世界ID>].jpg 
-│       ├── cover world[<世界ID>].jpg 
-│       ├── cover world[<世界ID>].html 
-│       ├── desc world[<世界ID>].txt 
-│       └── title world[<世界ID>].txt 
+│       ├── BG[<世界ID>].jpg 
+│       ├── cover[<世界ID>].jpg 
+│       ├── cover[<世界ID>].html 
+│       ├── desc[<世界ID>].txt 
+│       └── title[<世界ID>].txt 
 ├── ranked/                # 视频存储
 │   └── YYYYMMDD/          # 按日期分类
 │       ├── match[<比赛ID>].mp4  
-│       ├── BG match[<比赛ID>].jpg 
-│       ├── cover match[<比赛ID>].jpg 
-│       ├── cover match[<比赛ID>].html 
-│       ├── desc match[<比赛ID>].txt 
-│       └── title match[<比赛ID>].txt 
+│       ├── BG[<比赛ID>].jpg 
+│       ├── cover[<比赛ID>].jpg 
+│       ├── cover[<比赛ID>].html 
+│       ├── desc[<比赛ID>].txt 
+│       └── title[<比赛ID>].txt 
 ├── death_clip/            # 死亡切片
 │   └── YYYYMMDD/          # 按日期分类
 │       ├── match[<比赛ID>]<时间节点>.mp4  
@@ -234,21 +231,6 @@
 └── up_history.json        # 上传记录
 ```
 
-## 功能点
-- **智能切片**：根据比赛时长自动切片和裁剪视频
-- **封面生成**：利用 Chromium 自动生成视频封面
-- **视频上传**：利用 biliup 自动上传视频
-- **历史记录**：`up_history.json` 记录上传信息
-- **死亡切片**：根据比赛timeline信息自动生成死亡切片
-
-
-## 注意事项
-1. 确保 OBS 回放缓存时间 > 最大切片时长(一般20分钟足矣)
-2. 首次使用需通过 biliup 登录 B 站账号
-3. 不同比赛模式的配置参数需单独设置
-4. 目前只负责Any%项目速通
-5. 私人房间如果未设置'当有人完成时比赛结束'则可能剪辑不准确！
-6. OBS录像路径无要求
 
 ## 备用方案
 如果上述安装方法无法成功，请尝试以下的方法
@@ -260,7 +242,3 @@
 - 下载 [biliup](https://github.com/biliup/biliup) 选择 `biliupR-v1.1.28-x86_64-windows.zip` 
 - 解压后把 `biliup.exe` 加入系统环境变量
 - 在工作目录打开终端，输入 `biliup login` 登录哔哩哔哩账号，推荐使用扫码登录
-
-#### ③chromium 部署
-- 下载 [chromium](https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F1135619%2Fchrome-win.zip?generation=1682469079864558&alt=media)
-- 修改配置文件路径（参考下文配置说明），把 `config.json` 中 `browser_executable` 字段的值改为 `chrome.exe` 所在的路径，注意 `\` 与 `/`

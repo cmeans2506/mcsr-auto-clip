@@ -84,11 +84,6 @@ class GameConfigPanel(QWidget):
         # 文件夹操作按钮
         main_layout.addLayout(self._create_folder_buttons())
 
-        # 保存按钮
-        self.save_btn = QPushButton(self.BTN_SAVE)
-        self.save_btn.clicked.connect(self._on_save)
-        main_layout.addWidget(self.save_btn)
-
         main_layout.addStretch(1)
 
         # 处理选项复选框
@@ -209,14 +204,13 @@ class GameConfigPanel(QWidget):
         config.use_death_clip = self.death_clip_checkbox.isChecked()
         config.clean_raw_file = self.obs_clean_checkbox.isChecked()
 
-        logger.info(f"保存配置 - 游戏名称: {nickname}, 文件夹: {self.folder_path}")
-        logger.info(f"处理选项 - ranked: {self.ranked_checkbox.isChecked()}, "
-              f"rsg: {self.rsg_checkbox.isChecked()}, "
-              f"死亡切片: {self.death_clip_checkbox.isChecked()}, "
-              f"源文件清理: {self.obs_clean_checkbox.isChecked()}")
+        logger.info(f"保存配置 - 游戏名称: {nickname}, 视频文件夹: {self.folder_path}, "
+                    f"ranked: {self.ranked_checkbox.isChecked()}, "
+                    f"rsg: {self.rsg_checkbox.isChecked()}, "
+                    f"死亡切片: {self.death_clip_checkbox.isChecked()}, "
+                    f"源文件清理: {self.obs_clean_checkbox.isChecked()}")
 
         config.save()
-        QMessageBox.information(self, "成功", "设置已保存")
 
     def _on_start(self):
         if hasattr(self, "_start_worker") and self._start_worker.isRunning() or auto_clip.is_running:
@@ -233,7 +227,7 @@ class GameConfigPanel(QWidget):
             msg.setText("启动时出现错误：\n" + detail)
             msg.exec()
 
-
+        self._on_save()
         self._start_worker = Worker(auto_clip.start)
         self._start_worker.success.connect(_on_start_success)
         self._start_worker.error.connect(_on_start_error)
