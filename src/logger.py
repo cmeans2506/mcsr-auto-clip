@@ -22,7 +22,6 @@ class QtLoggingHandler(logging.Handler):
 
     def emit(self, record):
         msg = self.format(record)
-        # 信号发射是线程安全的
         log_signal_hub.log_signal.emit(msg, record.levelno)
 
 

@@ -2,15 +2,16 @@ import inspect
 from pathlib import Path
 from datetime import datetime
 from string import Template
+from PyQt6.QtCore import QCoreApplication
 
 from config import config
-from translator import translator
 import util
-from ranked.ranked_service import UserData, MatchData, RankedService
+from ranked.ranked_service import UserData, MatchData, RankedService, TimelineType
 from base.base_description_generator import BaseDescriptionGenerator
 from logger import setup_logger
 
 logger = setup_logger(__name__)
+
 
 class DescriptionGenerator(BaseDescriptionGenerator):
     def __init__(self, match_data: MatchData, user_data: UserData, video_path: Path):
@@ -18,24 +19,24 @@ class DescriptionGenerator(BaseDescriptionGenerator):
         self._match_data = match_data
         self._user_data = user_data
 
-        self.sub_template = Template(inspect.cleandoc("""        
-
-            ■ 分段详情
+        self.sub_template = Template(inspect.cleandoc(
+            QCoreApplication.translate("RankedDescriptionGenerator", """
+            ■ Timelines
             $timelines_info
             
-            ■ 比赛详情
+            ■ Match Details
             $match_info
             
-            ■ 个人信息
+            ■ Player Info
             $user_info
-        
-        """))
 
+            """)
+        ))
 
     def _generate_timelines_info(self):
         def timeline_to_str(timeline: MatchData.Timeline) -> str:
-            event_label = translator.timeline_map.get(timeline.type_)
-            if timeline.uuid != config.player.uuid or not event_label:
+            timeline_type = TimelineType(timeline.type_)
+            if timeline.uuid != config.player.uuid or timeline_type == TimelineType.UNKNOWN:
                 return ""
 
             time_str = util.ts_to_str_sec(timeline.time)
@@ -47,7 +48,7 @@ class DescriptionGenerator(BaseDescriptionGenerator):
                 diff_val = util.ts_to_str_sec(abs(timeline.time - opp_tl.time))
                 delta_str = f"({sign}{diff_val})"
 
-            return f"{time_str} {event_label} {delta_str}"
+            return f"{time_str} {timeline_type.label} {delta_str}"
 
         timelines = self._match_data.timelines
         timelines_info_list = [
@@ -71,11 +72,11 @@ class DescriptionGenerator(BaseDescriptionGenerator):
 
         return tmpl.format(
             players_line=" VS ".join([p.nickname for p in players]),
-            match_type=translator.match_type_map[self._match_data.type_.name],
+            match_type=self._match_data.type_.label,
             season=self._match_data.season,
             date=datetime.fromtimestamp(self._match_data.date).strftime("%Y-%m-%d %H:%M:%S"),
-            seedtype=translator.seedtype_map[self._match_data.seedType],
-            bastion=translator.bastion_map[self._match_data.bastionType]
+            seedtype=self._match_data.seedType.label,
+            bastion=self._match_data.bastionType.label
         )
 
     # Cmeans 1279(1573 peak) #1548 pb: 08:57 avg: 13:19 184h 胜：42% 投：13%
@@ -89,8 +90,8 @@ class DescriptionGenerator(BaseDescriptionGenerator):
             win_rate = round(100 * season_stats.wins.ranked / total_match_count, 1)
             ff_rate = round(100 * season_stats.forfeits.ranked / total_match_count, 1)
 
-        tmpl = ("{nickname} {eloRate} #{eloRank} {highest}peak {playtime}h "
-                "pb: {pb} avg: {avg} 胜: {win_rate}% 投: {ff_rate}% 总: {total_match_count}")
+        tmpl = ("{nickname} {eloRate} #{eloRank} {playtime}h peak: {highest} "
+                "pb: {pb} avg: {avg} win: {win_rate}% ff: {ff_rate}% total: {total_match_count}")
 
         return tmpl.format(
             nickname=self._user_data.nickname,
@@ -110,11 +111,10 @@ class DescriptionGenerator(BaseDescriptionGenerator):
         upload_reason = f"①sub {max_time}"
         return upload_reason
 
-
     def generate_about_info(self):
         return inspect.cleandoc(f"""
         
-             · 可视化：https://mcsrrankedstats.vercel.app/{config.player.name}/{self._match_data.id_}/
+             · visualization：https://mcsrrankedstats.vercel.app/{config.player.name}/{self._match_data.id_}/
              · api：https://mcsrranked.com/api/matches/{self._match_data.id_}
              
         """)
@@ -138,6 +138,7 @@ def main():
         user_data=ranked_service.get_user_data()
     )
     print(desc_generator.generate())
+
 
 if __name__ == "__main__":
     main()

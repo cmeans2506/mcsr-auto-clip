@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import TypeVar, Iterable, Callable, Optional
 
 
-# 毫秒转成三位小数的时间字符串，对本项目的场景比较适用。偷懒名字就简写了。
+# Converts milliseconds into a time string with three decimal places (MM:SS.ms).
+# This is specifically suitable for the timing scenarios in this project.
 def ts_to_str(timestamp: Optional[int]) -> Optional[str]:
     if timestamp is None:
         return None

@@ -1,10 +1,13 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
                              QLabel, QPushButton, QLineEdit, QGroupBox,
                              QTimeEdit, QDateEdit, QSpinBox, QMessageBox)
-from PyQt6.QtCore import QTime, QDate
+from PyQt6.QtCore import QTime, QDate, QTimer
+from PyQt6.QtCore import QCoreApplication
 from auto_clip import auto_clip
 from datetime import datetime
 from logger import setup_logger
+from rsg.rsg_pb import Record as RsgPbRecord
+from rsg.rsg_pb import rsg_pb_signal_hub
 
 logger = setup_logger(__name__)
 
@@ -15,68 +18,39 @@ class PBRecordPanel(QWidget):
     PB_TYPES = [
         {
             "key": "rsg.first_portal",
-            "title": "盲传",
+            "title": QCoreApplication.translate("PBRecordPanel", "Blind"),
             "grid_pos": (0, 0)
         },
         {
             "key": "rsg.enter_stronghold",
-            "title": "隔墙有眼",
+            "title": QCoreApplication.translate("PBRecordPanel", "Stronghold"),
             "grid_pos": (0, 1)
         },
         {
             "key": "rsg.enter_end",
-            "title": "进入末地",
+            "title": QCoreApplication.translate("PBRecordPanel", "Enter End"),
             "grid_pos": (1, 0)
         },
         {
             "key": "rsg.credits",
-            "title": "结束",
+            "title": QCoreApplication.translate("PBRecordPanel", "Finish"),
             "grid_pos": (1, 1)
         }
     ]
 
-    # 默认配置
-    DEFAULT_CONFIG = {
-        "rsg.first_portal": {
-            "id": 0,
-            "igt": 0,
-            "bvid": "",
-            "time": 0
-        },
-        "rsg.enter_stronghold": {
-            "id": 0,
-            "igt": 0,
-            "bvid": "",
-            "time": 0
-        },
-        "rsg.enter_end": {
-            "id": 0,
-            "igt": 0,
-            "bvid": "",
-            "time": 0
-        },
-        "rsg.credits": {
-            "id": 0,
-            "igt": 0,
-            "bvid": "",
-            "time": 0
-        }
-    }
-
-    # 界面文本常量
-    LABEL_DATE = "打出日期"
-    LABEL_IGT = "游戏内时间(IGT)"
-    LABEL_BVID = "B站视频BV号"
-    BTN_SAVE = "保存"
-    BTN_RESET = "恢复默认"
 
     def __init__(self):
         super().__init__()
         # 存储所有PB记录的控件
         self.pb_widgets = {}
+        self._has_unsaved_changes = False
         self._init_ui()
         # 初始化时加载数据
         self._load_from_rsg_pb()
+        # 设置自动保存
+        self._connect_change_signals()
+
+        rsg_pb_signal_hub.rsg_pb_signal.connect(self._load_from_rsg_pb)
 
     def _init_ui(self):
         """初始化用户界面"""
@@ -98,16 +72,34 @@ class PBRecordPanel(QWidget):
 
         self.setLayout(layout)
 
+
+    def _connect_change_signals(self):
+        """连接所有输入控件的变化信号"""
+        for key, widgets in self.pb_widgets.items():
+            # 日期变化
+            widgets["date_edit"].dateChanged.connect(self._mark_unsaved)
+            # 时间变化
+            widgets["time_edit"].timeChanged.connect(self._mark_unsaved)
+            # 毫秒变化
+            widgets["ms_spin"].valueChanged.connect(self._mark_unsaved)
+            # BV号输入变化
+            widgets["bvid_input"].textChanged.connect(self._mark_unsaved)
+
+    def _mark_unsaved(self):
+        """标记有未保存的更改"""
+        self._has_unsaved_changes = True
+
+
     def _create_pb_group(self, pb_type):
         """创建单个PB记录组"""
         key = pb_type["key"]
-        title = pb_type["title"]
+        title = self.tr(pb_type["title"])
 
         group = QGroupBox(title)
         layout = QVBoxLayout()
 
         # 打出日期
-        layout.addWidget(QLabel(self.LABEL_DATE))
+        layout.addWidget(QLabel(self.tr("Record Date")))
         date_edit = QDateEdit()
         date_edit.setDisplayFormat("yyyy-MM-dd")
         date_edit.setCalendarPopup(True)
@@ -115,14 +107,14 @@ class PBRecordPanel(QWidget):
         layout.addWidget(date_edit)
 
         # IGT时间(分:秒.毫秒)
-        layout.addWidget(QLabel(self.LABEL_IGT))
+        layout.addWidget(QLabel(self.tr("IGT")))
         time_layout, time_edit, ms_spin = self._create_time_input()
         layout.addLayout(time_layout)
 
         # BV号
-        layout.addWidget(QLabel(self.LABEL_BVID))
+        layout.addWidget(QLabel(self.tr("Video Link")))
         bvid_input = QLineEdit()
-        bvid_input.setPlaceholderText("如: BV1TdNRzwEfX")
+        bvid_input.setPlaceholderText(self.tr("Please enter your video link"))
         layout.addWidget(bvid_input)
 
         group.setLayout(layout)
@@ -167,14 +159,9 @@ class PBRecordPanel(QWidget):
         layout = QHBoxLayout()
 
         # 恢复默认按钮
-        self.reset_btn = QPushButton(self.BTN_RESET)
+        self.reset_btn = QPushButton(self.tr("Reset"))
         self.reset_btn.clicked.connect(self._on_reset)
         layout.addWidget(self.reset_btn)
-
-        # 保存按钮
-        self.save_btn = QPushButton(self.BTN_SAVE)
-        self.save_btn.clicked.connect(self._on_save)
-        layout.addWidget(self.save_btn)
 
         widget.setLayout(layout)
         return widget
@@ -209,16 +196,16 @@ class PBRecordPanel(QWidget):
         """处理恢复默认设置事件"""
         reply = QMessageBox.question(
             self,
-            "确认",
-            "确定要清空所有PB记录吗？",
+            self.tr("Reset To Default"),
+            self.tr("Are you sure to clear all PB records?"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
 
         if reply == QMessageBox.StandardButton.Yes:
             self._reset_to_defaults()
-            QMessageBox.information(self, "成功", "已清空所有PB记录")
-            logger.info(f"已清空所有PB记录")
+            QMessageBox.information(self, self.tr("Success"), self.tr("All PB records has been cleared."))
+            logger.info("All PB records cleared by user.")
 
     def _reset_to_defaults(self):
         """重置所有PB记录为默认值"""
@@ -233,20 +220,22 @@ class PBRecordPanel(QWidget):
             # 清空BV号
             widgets["bvid_input"].clear()
 
-    def _on_save(self):
-        """处理保存事件"""
-        # 验证配置
-        valid, errors = self.validate_config()
-        if not valid:
-            error_msg = "\n".join(errors)
-            QMessageBox.warning(self, "验证失败", error_msg)
-            logger.warning(f"验证失败: \n{error_msg}")
-            return
+        self._save_config(silent=True)
 
+    def _save_config(self, silent=False):
+        """保存配置
+
+        Args:
+            silent: 是否静默保存(不显示成功消息框)
+        """
         # 保存到rsg_pb.pb_info
         self._save_to_rsg_pb()
-        QMessageBox.information(self, "成功", "PB记录已保存")
-        logger.info(f"rsg_pb已成功保存")
+
+        # 重置未保存标记
+        self._has_unsaved_changes = False
+
+        if not silent:
+            QMessageBox.information(self, self.tr("Success"), self.tr("PB record has been successfully saved."))
 
     def _save_to_rsg_pb(self):
         """保存界面数据到rsg_pb.pb_info"""
@@ -267,14 +256,7 @@ class PBRecordPanel(QWidget):
             if key in auto_clip.rsg_pb.pb_info:
                 current_id = auto_clip.rsg_pb.pb_info[key].id
 
-            auto_clip.rsg_pb.pb_info[key] = {
-                "id": current_id,
-                "igt": igt,
-                "bvid": bvid,
-                "time": timestamp
-            }
-
-        # 调用rsg_pb的保存方法(如果有)
+            auto_clip.rsg_pb.pb_info[key] = RsgPbRecord(id=current_id, igt=igt, bvid=bvid, time=timestamp)
 
         auto_clip.rsg_pb.write_back()
 
@@ -286,7 +268,6 @@ class PBRecordPanel(QWidget):
         total_ms += ms_spin.value()
         return total_ms
 
-
     def _ms_to_time(self, milliseconds):
         """将毫秒转换为(分, 秒, 毫秒)"""
         total_seconds = milliseconds // 1000
@@ -294,7 +275,6 @@ class PBRecordPanel(QWidget):
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         return (minutes, seconds, ms)
-
 
     def validate_config(self):
         """验证配置是否有效"""
@@ -309,11 +289,8 @@ class PBRecordPanel(QWidget):
             igt = self._time_to_ms(widgets["time_edit"], widgets["ms_spin"])
 
             # 如果填写了BV号但IGT为0，报错
-            if igt == 0:
-                errors.append(f"{title}: IGT时间为0")
+            if igt <= 0:
+                errors.append(f'{title}: {self.tr("IGT not valid")}')
 
-            # 验证BV号格式(如果填写了)
-            if bvid and not bvid.startswith("BV"):
-                errors.append(f"{title}: BV号格式错误，应以'BV'开头")
 
         return len(errors) == 0, errors

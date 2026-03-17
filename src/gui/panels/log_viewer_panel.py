@@ -11,7 +11,7 @@ class LogViewer(QPlainTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setReadOnly(True)
-        self.setMaximumBlockCount(1000)  # 性能关键：限制最大行数，防止内存溢出
+        self.setMaximumBlockCount(500)
 
         # 颜色映射 (使用标准 Level 数值)
         self.color_map = {

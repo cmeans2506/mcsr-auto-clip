@@ -12,10 +12,13 @@ import threading
 from typing import Optional, Literal
 from dataclasses import dataclass
 
+from gui.status_notifier import status_notifier
 import util
 from config import config
 from logger import setup_logger
 from my_exceptions import BiliupNotConfiguredException, BiliupLogInError, BiliupUploadError
+
+
 
 logger = setup_logger(__name__)
 
@@ -63,18 +66,19 @@ class BiliUploader:
         if not (config.base_dir / "cookies.json").exists():
             qrcode_path = config.base_dir / 'qrcode.png'
             qrcode_path.unlink(missing_ok=True)
-            logger.debug(f"清理了{qrcode_path}")
-            logger.warning(f"biliup未登录，请选择用于上传视频的账号登录！推荐选择扫码登录！")
+            logger.debug(f"Cleaned up {qrcode_path}")
+            logger.warning("biliup is not logged in. Please log in with the account you want to use for uploads. "
+                           "Scanning the QR code is recommended!")
             cmd = [str(BiliUploader.BILIUP_PATH), "login"]
-            logger.debug(f"正在运行: {' '.join(cmd)}")
+            logger.debug(f"Running command: {' '.join(cmd)}")
             try:
                 stop_assist = False
                 def assist():
-                    logger.debug("进入assist()")
+                    logger.debug("Entering assist() thread")
                     start_time = time.time()
                     while not qrcode_path.exists():
                         if stop_assist or time.time() - start_time > 300:
-                            logger.debug("退出assist()")
+                            logger.debug("Exiting assist() thread (Timeout/Stopped)")
                             return
                         time.sleep(0.5)
 
@@ -82,10 +86,10 @@ class BiliUploader:
 
                     while not (config.base_dir / "cookies.json").exists():
                         if stop_assist or time.time() - start_time > 300:
-                            logger.debug("退出assist()")
+                            logger.debug("Exiting assist() thread (Timeout/Stopped)")
                             return
                         time.sleep(0.5)
-                    logger.debug("退出assist()")
+                    logger.debug("Exiting assist() thread (Login successful)")
                 thread = threading.Thread(
                     target=assist,
                     args=(),
@@ -97,7 +101,7 @@ class BiliUploader:
                 stop_assist = True
                 raise BiliupLogInError(e.returncode, e.stderr)
 
-        logger.info("BilibiliUploader检查通过！")
+        logger.info("BiliUploader check passed!")
 
     @staticmethod
     def _parse_aid_bvid(log) -> (str, str):
@@ -116,7 +120,7 @@ class BiliUploader:
         with open(self._up_history_path, "w", encoding="utf8") as up_history_file:
             history_data = [item.model_dump(by_alias=True) for item in self._upload_history_list]
             json.dump(history_data, up_history_file, indent=4, ensure_ascii=False)
-        logger.info("上传历史已写入文件")
+        logger.info("Upload history has been written to file.")
 
 
     def _upload_task(self, video_info: UploadInfo):
@@ -130,18 +134,19 @@ class BiliUploader:
             "--tag", ",".join(video_info.video_tags),
             str(video_info.video_path),
         ]
-        logger.info(f"正在上传: {video_info.video_title}")
-        logger.debug(f"正在运行: {' '.join(cmd)}")
+        logger.info(f"Uploading: {video_info.video_title}")
+        logger.debug(f"Running command: {' '.join(cmd)}")
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True,
                                     encoding="utf-8", cwd=config.base_dir,
                                     creationflags=subprocess.CREATE_NO_WINDOW)
         except subprocess.CalledProcessError as e:
-            logger.warning("文件上传失败！", f"退出码: {e.returncode}\nstderr：{e.stderr}")
+            logger.warning(f"File upload failed! Exit code: {e.returncode}\nstderr: {e.stderr}")
             raise BiliupUploadError(e.returncode, e.stderr)
-        logger.debug(f"biliup标准输出：{result.stdout}")
+        logger.debug(f"biliup stdout: {result.stdout}")
         aid, bvid = BiliUploader._parse_aid_bvid(result.stdout)
-        logger.info(f"{video_info.video_title} 已经上传至{bvid}")
+        logger.info(f"Video '{video_info.video_title}' successfully uploaded to {bvid}")
+        status_notifier.message_signal.emit(f"Video '{video_info.video_title}' successfully uploaded to {bvid}", 30000)
 
         with self._lock:
             self._upload_history_list.append(

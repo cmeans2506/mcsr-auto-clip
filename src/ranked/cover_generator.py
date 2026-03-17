@@ -21,7 +21,7 @@ class CoverGenerator(BaseCoverGenerator):
 
     def should_render_html(self) -> bool:
         if len(self.match_info.players) != 2:
-            logger.info(f"非1v1，直接使用{self.get_bg_path()}作为封面")
+            logger.info(f"Not a 1v1 match. Using {self.get_bg_path()} directly as the cover.")
             return False
         return True
 

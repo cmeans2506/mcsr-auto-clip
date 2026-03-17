@@ -1,26 +1,17 @@
 from typing import Optional
 from pydantic import BaseModel, Field
 import requests
-from enum import Enum
 from datetime import datetime
 from functools import cache
+from cachetools import TTLCache, cached
+from mcsr_enums import MatchType, SeedType, BastionType, TimelineType
 
 from config import config
 import util as util
-from translator import translator
 from my_exceptions import PlayerNotFoundException, RankedAPIUnavailableError
 from logger import setup_logger
 
 logger = setup_logger(__name__)
-
-
-class Seed(BaseModel):
-    # 使用未筛选的种子，以下字段都为null或[]
-    id_: Optional[str] = Field(alias='id')
-    overworld: Optional[str]
-    nether: Optional[str]
-    endTowers: Optional[list[int]]
-    variations: Optional[list[str]]
 
 
 class Player(BaseModel):
@@ -43,43 +34,27 @@ class Change(BaseModel):
     eloRate: Optional[int]
 
 
-class Rank(BaseModel):
-    season: Optional[int] = None
-    allTime: Optional[int] = None
-
-class MatchType(Enum):
-    CASUAL_MATCH = 1
-    RANKED_MATCH = 2
-    PRIVATE_ROOM_MATCH = 3
-    EVNET_MODE_MATCH = 4
-
 # MatchInfo 是简化版的比赛信息，后面的 MatchData 是详细的
 class MatchInfo(BaseModel):
-
-
     id_: int = Field(alias='id')
     type_: MatchType = Field(alias='type')
-    seed: Seed
     category: Optional[str]
-    gameMode: Optional[str] = None
     players: list[Player]
-    spectators: list[Player]
     result: Result
     forfeited: bool
     decayed: bool
-    rank: Rank
     changes: list[Change]
     season: int
     date: int
-    seedType: Optional[str]
-    bastionType: Optional[str]
-    tag: Optional[str] = None
+    seedType: Optional[SeedType]
+    bastionType: Optional[BastionType]
 
     def get_opponent_info(self) -> Player:
         return next(filter(lambda player_info: player_info.uuid != config.player.uuid, self.players), None)
     def get_my_info(self) -> Player:
         return next(filter(lambda player_info: player_info.uuid == config.player.uuid, self.players), None)
 
+    @property
     def is_valid_for_upload(self) -> bool:
         if self.result.time > config.upload_setting.ranked[self.type_.name].max_time:
             return False
@@ -90,104 +65,65 @@ class MatchInfo(BaseModel):
         return True
 
     def __str__(self) -> str:
-        mode = translator.match_type_map[self.type_.name]
-
         my_info = self.get_my_info()
         if my_info and my_info.uuid == self.result.uuid:
-            result = "胜"
+            result = "win"
         else:
-            result = "负"
+            result = "lose"
 
         if self.forfeited:
-            time_part = "弃赛"
-        elif result == "胜":
-            time_part = util.ts_to_str(self.result.time)
+            time_part = "ff"
+        elif result == "win":
+            time_part = util.ts_to_str_sec(self.result.time)
         else:
-            time_part = "-"
-
-        seed_type = translator.seedtype_map[self.seedType]
+            time_part = "N/A"
 
         current_time = datetime.now().timestamp()
         time_diff = current_time - self.date
 
-        if time_diff < 3600:  # 小于1小时
+        if time_diff < 3600:
             minutes_ago = int(time_diff / 60)
-            time_diff_str = f"{minutes_ago}分钟前"
-        elif time_diff < 86400:  # 小于1天
+            time_diff_str = f"{minutes_ago} minutes ago"
+        elif time_diff < 86400:
             hours_ago = int(time_diff / 3600)
-            time_diff_str = f"{hours_ago}小时前"
-        else:  # 大于等于1天
+            time_diff_str = f"{hours_ago} hours ago"
+        else:
             days_ago = int(time_diff / 86400)
-            time_diff_str = f"{days_ago}天前"
+            time_diff_str = f"{days_ago} days ago"
 
-        return f"{mode} - {result} {time_part} {seed_type} {time_diff_str}"
+        return f"{self.type_} - {result} - {time_part} - {self.seedType} - {time_diff_str}"
 
+
+class RankedCasualStats(BaseModel):
+    ranked: Optional[int] = None
+    casual: Optional[int] = None
+
+class StatisticsCategory(BaseModel):
+    bestTime: RankedCasualStats
+    highestWinStreak: RankedCasualStats
+    currentWinStreak: RankedCasualStats
+    playedMatches: RankedCasualStats
+    playtime: RankedCasualStats
+    completionTime: RankedCasualStats
+    forfeits: RankedCasualStats
+    completions: RankedCasualStats
+    wins: RankedCasualStats
+    loses: RankedCasualStats
+
+class Statistics(BaseModel):
+    season: StatisticsCategory
+    total: StatisticsCategory
+
+class SeasonResult(BaseModel):
+    highest: Optional[int]
+    lowest: Optional[int]
 
 class UserData(BaseModel):
-    class Achievements(BaseModel):
-        class AchievementItem(BaseModel):
-            id_: str = Field(alias='id')
-            date: int
-            data: list
-            level: int
-            goal: Optional[int] = None
-
-        display: list[AchievementItem]
-        total: list[AchievementItem]
-
-    class Timestamp(BaseModel):
-        firstOnline: int
-        lastOnline: int
-        lastRanked: int
-        nextDecay: Optional[int]
-
-
-    class Statistics(BaseModel):
-        class StatisticsCategory(BaseModel):
-            class RankedCasualStats(BaseModel):
-                ranked: Optional[int] = None
-                casual: Optional[int] = None
-
-            bestTime: RankedCasualStats
-            highestWinStreak: RankedCasualStats
-            currentWinStreak: RankedCasualStats
-            playedMatches: RankedCasualStats
-            playtime: RankedCasualStats
-            completionTime: RankedCasualStats
-            forfeits: RankedCasualStats
-            completions: RankedCasualStats
-            wins: RankedCasualStats
-            loses: RankedCasualStats
-
-        season: StatisticsCategory
-        total: StatisticsCategory
-
-    class WeeklyRaces(BaseModel):
-        id_: int = Field(alias='id')
-        time: int
-        rank: int
-
-    class SeasonResult(BaseModel):
-        class LastSeasonResult(BaseModel):
-            eloRate: Optional[int]
-            eloRank: Optional[int]
-            phasePoint: int
-
-        last: LastSeasonResult
-        highest: Optional[int]
-        lowest: Optional[int]
-        phases: list
-
     uuid: str
     nickname: str
-    roleType: int
     eloRate: Optional[int]
     eloRank: Optional[int]
-    achievements: Achievements
-    timestamp: Timestamp
     statistics: Statistics
-    connections: dict
-    weeklyRaces: list[WeeklyRaces]
     country: Optional[str]
     seasonResult: SeasonResult
 
@@ -196,27 +132,22 @@ class MatchData(BaseModel):
     class Timeline(BaseModel):
         uuid: str
         time: int
-        type_: str = Field(alias="type")
+        type_: TimelineType = Field(alias="type")
 
     id_: int = Field(alias='id')
     type_: MatchType = Field(alias="type")
-    seed: Seed
     category: str
     players: list[Player]
-    spectators: list[Player]
     result: Result
     forfeited: bool
     decayed: bool
-    rank: Rank
     changes: list[Change]
     completions: list[Result]
     timelines: list[Timeline]
     season: int
     date: int
-    seedType: str
-    bastionType: str
-    tag: Optional[str] = None
-    replayExist: bool
+    seedType: SeedType
+    bastionType: BastionType
 
     def get_opponent_timeline(self, type_: str) -> Optional[Timeline]:
         return util.find_first(lambda timeline:timeline.type_ == type_
@@ -230,6 +161,8 @@ class RankedService:
     _RANKED_API = "https://mcsrranked.com/api/users/"
     _MATCH_API = "https://mcsrranked.com/api/matches/"
     _MATCHES_API_EXTENSION = "/matches"
+
+    _get_recent_matches_cache = TTLCache(maxsize=128, ttl=5)
 
     def __init__(self):
         """
@@ -251,105 +184,119 @@ class RankedService:
         :param name:
         :return: uuid
         """
-        logger.info(f"正在获取 {name} 的 uuid ")
+        logger.info(f"Fetching UUID for player: {name}")
         api = f"{RankedService._RANKED_API}{name}"
         try:
             response = requests.get(api)
 
             if response.status_code == 400:
-                logger.warning(f"不存在玩家 '{name}' ，请检查 'player' 字段是否配置正确")
+                logger.warning(f"Player '{name}' not found. Please check if the 'player' field is configured correctly.")
                 raise PlayerNotFoundException(name)
 
             response.raise_for_status()
             return response.json()["data"]["uuid"]
         except requests.exceptions.RequestException as e:
-            logger.warning(f"请求：{e.request.url}时出现错误，请检查网络后重新启动")
+            if e.response.status_code == 429:
+                logger.warning("Ranked API rate limit exceeded. Please try again later.")
+            else:
+                logger.warning(f"Error during request to {e.request.url}. Please check your network connection.")
             raise RankedAPIUnavailableError(api, e) from e
 
     @staticmethod
     @cache
     def get_uuid_mojang(name: str) -> str:
-        logger.info(f"正在从 Mojang 获取 {name} 的 uuid")
+        logger.info(f"Fetching UUID for {name} from Mojang API")
         api = f"https://api.mojang.com/users/profiles/minecraft/{name}"
 
         try:
             response = requests.get(api, timeout=10)
             if response.status_code == 204:
-                logger.warning(f"Mojang api 未找到玩家 '{name}'")
+                logger.warning(f"Mojang API could not find player '{name}'")
                 raise PlayerNotFoundException(name)
             response.raise_for_status()
             data = response.json()
             return data["id"]
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
-                logger.error("请求 Mojang API 过于频繁，请稍后再试")
+                logger.warning("Mojang API rate limit exceeded. Please try again later.")
             elif e.response.status_code == 404:
                 raise PlayerNotFoundException(name)
             raise
         except Exception as e:
-            logger.error(f"访问 Mojang API 时出错: {e}")
+            logger.error(f"Error accessing Mojang API: {e}")
             raise
 
-
+    @cached(_get_recent_matches_cache)
     def get_recent_matches(self, match_type: Optional[MatchType] = None, count: int = 50) -> list[MatchInfo]:
         api = f"{RankedService._RANKED_API}{config.player.name}{RankedService._MATCHES_API_EXTENSION}?count={count}"
         if match_type is not None:
             api += f"&type={match_type.value}"
         try:
             response = self._session.get(api)
+
+            if response.status_code == 400:
+                logger.warning(f"Player '{config.player.name}' not found. Please check if the 'player' field is configured correctly.")
+                raise PlayerNotFoundException(config.player.name)
+
             response.raise_for_status()
             data = response.json()
-        except requests.exceptions.HTTPError:
-            logger.warning(f"不存在玩家 '{config.player.name}' ，请检查 'player' 字段是否配置正确")
-            raise PlayerNotFoundException(config.player.name)
+
         except requests.exceptions.RequestException as e:
-            if e.request:
-                logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+            if e.response.status_code == 429:
+                logger.warning("Ranked API rate limit exceeded. Please try again later.")
+            else:
+                logger.warning(f"Error during request to {e.request.url}. Please check your network connection.")
             return []
 
         return [MatchInfo(**match_info) for match_info in data["data"]]
 
     def get_latest_match(self) -> Optional[MatchInfo]:
+        if not config.ranked_job:
+            return None
+
         match_info_list = self.get_recent_matches(count=5)
         if not match_info_list:
-            logger.info(f"{config.player.name}最近没有比赛")
+            logger.info(f"No recent matches found for: {config.player.name}")
             return None
 
         latest_match = match_info_list[0]
-        logger.info(f"最新对局：{latest_match}")
+        logger.info(f"Latest match found: {latest_match}")
 
         if latest_match.date < config.launch_time:
-            logger.info("比赛时间早于脚本启动时间，跳过")
+            logger.info("Match ended before script launch. Skipping.")
             return None
         if latest_match.result.uuid != config.player.uuid:
-            logger.info("比赛未胜利，跳过")
+            logger.info("Match was not a victory. Skipping.")
             return None
         if latest_match.forfeited or latest_match.decayed:
-            logger.info("不是完整比赛，跳过")
+            logger.info("Incomplete match (forfeited or decayed). Skipping.")
             return None
         if latest_match.result.time > config.clip_setting.ranked[latest_match.type_.name].max_time:
-            logger.info(f"比赛的完成时间{util.ts_to_str(latest_match.result.time)}超过了最大允许时间"
-                  f"{util.ts_to_str(config.clip_setting.ranked[latest_match.type_.name].max_time)}，跳过")
+            logger.info(f"Completion time {util.ts_to_str(latest_match.result.time)} exceeds the maximum allowed "
+                        f"{util.ts_to_str(config.clip_setting.ranked[latest_match.type_.name].max_time)}. Skipping.")
             return None
         if latest_match.bastionType not in config.clip_setting.ranked[latest_match.type_.name].bastion_type:
-            logger.info(f"比赛的猪堡类型是{latest_match.bastionType}，不在指定的范围内："
-                  f"{config.clip_setting.ranked[latest_match.type_.name].bastion_type}，跳过")
+            logger.info(f"Bastion type '{latest_match.bastionType}' is not in the allowed list: "
+                        f"{config.clip_setting.ranked[latest_match.type_.name].bastion_type}. Skipping.")
             return None
         if latest_match.seedType not in config.clip_setting.ranked[latest_match.type_.name].seed_type:
-            logger.info(f"比赛的主世界类型是{latest_match.seedType}，不在指定的范围内："
-                  f"{config.clip_setting.ranked[latest_match.type_.name].seed_type}，跳过")
+            logger.info(f"Overworld seed type '{latest_match.seedType}' is not in the allowed list: "
+                        f"{config.clip_setting.ranked[latest_match.type_.name].seed_type}. Skipping.")
             return None
         if latest_match.category != "ANY":
-            logger.info(f"比赛的项目是{latest_match.category}，不是ANY%速通，跳过")
+            logger.info(f"Match category is {latest_match.category}, not ANY%. Skipping.")
             return None
         if latest_match.id_ in self._any_clip_matches:
-            logger.info(f"比赛已经被切片过，跳过")
+            logger.info("Match has already been clipped. Skipping.")
             return None
 
         self._any_clip_matches.append(latest_match.id_)
         return latest_match
 
     def get_latest_death_match(self) -> Optional[MatchData]:
+        if not config.use_death_clip:
+            return None
+
         match_info_list = self.get_recent_matches(count=5)
         if not match_info_list:
             return None
@@ -367,7 +314,7 @@ class RankedService:
         if util.find_first(is_death_timeline, latest_match_data.timelines) is None:
             return None
 
-        logger.info(f"最新死亡切片对局：match[{latest_match_data.id_}]")
+        logger.info(f"New death clip match detected: match[{latest_match_data.id_}]")
         self._death_clip_matches.append(latest_match_data.id_)
         return latest_match_data
 
@@ -376,6 +323,7 @@ class RankedService:
         api = f"{RankedService._RANKED_API}{config.player.name}"
         return UserData(**(self._session.get(api).json()["data"]))
 
+    @cache
     def get_match_data(self, id_: int) -> MatchData:
         api = f"{RankedService._MATCH_API}{id_}"
         return MatchData(**(self._session.get(api).json()["data"]))

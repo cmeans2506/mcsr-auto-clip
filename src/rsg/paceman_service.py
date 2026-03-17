@@ -1,29 +1,21 @@
+from functools import cache
 from typing import Optional, Literal, Any
 from pydantic import BaseModel, computed_field
 import requests
 import time
 
+from mcsr_enums import EventIdType
 import util
 from util import find_first
 from config import config
-from translator import translator
 from my_exceptions import PacemanAPIUnavailableError
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-EventId = Literal["rsg.enter_nether", "rsg.enter_bastion","rsg.enter_fortress", "rsg.first_portal",
-"rsg.second_portal", "rsg.enter_stronghold", "rsg.enter_end", "rsg.credits"]
-
-
-class ContextEvent(BaseModel):
-    eventId: str
-    rta: int
-    igt: int
-
 
 class Event(BaseModel):
-    eventId: EventId
+    eventId: EventIdType
     rta: int
     igt: int
     def is_valid_for_upload(self) -> bool:
@@ -35,28 +27,21 @@ class Event(BaseModel):
         return self.igt
 
     def __str__(self):
-        return f"{util.ts_to_str(self.igt)[:-4]}{translator.event_map[self.eventId]}"
+        return f"{util.ts_to_str_sec(self.igt)}{self.eventId.label}"
 
 class User(BaseModel):
     uuid: str
-    liveAccount: Optional[str] = None
-
-class ItemData(BaseModel):
-    estimatedCounts: dict[str, int]
-    usages: dict[str, int]
 
 
 class LiveRunData(BaseModel):
+    id: int = 0
     worldId: str
     gameVersion: str
     eventList: list[Event]
-    contextEventList: list[ContextEvent]
     user: User
     isCheated: bool
     isHidden: bool
-    numLeaves: int
     lastUpdated: int
-    itemData: Optional[ItemData] = None
     nickname: str
 
     def __str__(self):
@@ -69,32 +54,20 @@ class LiveRunData(BaseModel):
         # lastUpdated字段的值仅和eventList中的数据有关，与contextEventList无关
         return int(time.time() - self.lastUpdated // 1000 + self.eventList[-1].rta // 1000)
 
-    def get_points(self) -> Optional[float]:
-        # 暂时弃用
-        return None
-        if self.eventList[-1].eventId != "rsg.credits":
-            return None
-        # 总完成时间（秒）
-        total_seconds = self.eventList[-1].igt // 1000
-        # 计算分钟和秒钟
-        minutes = int(total_seconds // 60)  # 整分钟数
-        seconds = total_seconds % 60  # 剩余秒数
-        # 计算积分
-        points = 20 - (minutes + seconds / 100)
-        return round(points, 2)
-
+    @property
     def is_valid_for_clip(self) -> bool:
         for event in self.eventList:
             if event.igt < config.clip_setting.rsg[event.eventId]:
                 return True
         return False
 
+    @property
     def is_valid_for_upload(self) -> bool:
         for event in self.eventList:
             if event.igt < config.upload_setting.rsg[event.eventId]:
                 # 只进fort,不算
-                if event.eventId == 'rsg.enter_fortress':
-                    if util.find_first(lambda e: e.eventId == 'rsg.enter_bastion', self.eventList) is None:
+                if event.eventId == EventIdType.ENTER_FORTRESS:
+                    if util.find_first(lambda e: e.eventId == EventIdType.ENTER_BASTION, self.eventList) is None:
                         return False
                 return True
         return False
@@ -107,78 +80,16 @@ class LiveRunData(BaseModel):
         eventList 中存在 `rsg.second_portal` 这一项，我们不使用，将其清除
         :return: None
         """
-        if util.find_first(lambda e: e.eventId == 'rsg.second_portal', self.eventList) is None:
+        if util.find_first(lambda e: e.eventId == EventIdType.SECOND_PORTAL, self.eventList) is None:
             return
-        if self.eventList[-1].eventId == 'rsg.second_portal':
+        if self.eventList[-1].eventId == EventIdType.SECOND_PORTAL:
             self.lastUpdated -= self.eventList[-1].rta - self.eventList[-2].rta
-        self.eventList = list(filter(lambda e: e.eventId != 'rsg.second_portal', self.eventList))
+        self.eventList = list(filter(lambda e: e.eventId != EventIdType.SECOND_PORTAL, self.eventList))
 
+
+    @property
     def is_complete_run(self) -> bool:
-        return util.find_first(lambda e: e.eventId == "rsg.credits", self.eventList) is not None
-"""
-{
-  "data": {
-    "id": 303111,
-    "worldId": "31aad8ee0540af3a0573ac959e85f8b81f3941010d8cd20a33b67d04b29a0237",
-    "nickname": "dfanm",
-    "uuid": "4990072b-252e-42f2-aef9-45cd765f2425",
-    "twitch": "dfanm",
-    "nether": 146952,
-    "bastion": 200037,
-    "fortress": null,
-    "first_portal": null,
-    "stronghold": null,
-    "end": null,
-    "finish": null,
-    "netherRta": 152614,
-    "bastionRta": 211353,
-    "fortressRta": null,
-    "first_portalRta": null,
-    "strongholdRta": null,
-    "endRta": null,
-    "finishRta": null,
-    "insertTime": 1715824742,
-    "updateTime": 1715824799,
-    "realUpdate": null,
-    "vodId": 2146675569,
-    "vodOffset": 14503
-  },
-  "time": 1748327006553,
-  "isLive": false
-}"""
-
-
-class RunData(BaseModel):
-    id: int
-    worldId: str
-    nickname: str
-    uuid: str
-    twitch: Optional[str] = None
-    nether:  Optional[int] = None
-    bastion: Optional[int] = None
-    fortress: Optional[int] = None
-    first_portal: Optional[int] = None
-    stronghold: Optional[int] = None
-    end: Optional[int] = None
-    finish: Optional[int] = None
-    netherRta:  Optional[int] = None
-    bastionRta:  Optional[int] = None
-    fortressRta: Optional[int] = None
-    first_portalRta: Optional[int] = None
-    strongholdRta: Optional[int] = None
-    endRta: Optional[int] = None
-    finishRta: Optional[int] = None
-    insertTime: int
-    updateTime: int
-    realUpdate: Optional[int] = None
-    vodId: Optional[int] = None
-    vodOffset: Optional[int] = None
-
-class WorldData(BaseModel):
-    data: RunData
-    time: int  # 时间戳（毫秒）
-    isLive: bool
-
+        return self.eventList[-1].eventId == EventIdType.FINISH
 
 
 class PacemanService:
@@ -197,7 +108,7 @@ class PacemanService:
         try:
             data = self._session.get(self._LIVE_RUNS_API).json()
         except requests.exceptions.RequestException as e:
-            logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
+            logger.warning(f"Error requesting {e.request.url}. If this persists, please check your network connection.")
             return []
 
         return [LiveRunData(**live_run) for live_run in data]
@@ -217,8 +128,11 @@ class PacemanService:
         返回最新一场的 live run 信息
         :return: LiveRunData
         """
+        if not config.rsg_job:
+            return None
         live_run = self.get_my_live_run()
-        logger.info(f"实时速通数据：{live_run}")
+        self.update_id(live_run)
+        logger.info(f"Live speedrun data: {live_run}")
         run = None
 
         # 总共两种情况：①非完整速通，即一场速通没有完成就reset，但是这场速通中有值得切片的pace
@@ -236,49 +150,27 @@ class PacemanService:
         if run is None:
             return None
 
-        if not run.is_valid_for_clip():
-            logger.info("不满足切片条件，跳过")
+        if not run.is_valid_for_clip:
+            logger.info("Clip conditions not met. Skipping.")
             return None
         if run.worldId in self._clip_worlds:
-            logger.info("已经切片过，跳过")
+            logger.info("World has already been clipped. Skipping.")
             return None
 
         self._clip_worlds.append(run.worldId)
         return run
 
 
-    # def get_world(self, world_id: str) -> Optional[WorldData]:
-    #     try:
-    #         data = self._session.get(f"{self._GET_WORLD_API}/?worldId={world_id}").json()
-    #     except requests.exceptions.RequestException as e:
-    #         logger.warning(f"请求：{e.request.url}时出现错误，如果频繁出现此提示，请检查你的网络")
-    #         return None
-    #
-    #     return WorldData(**data)
+    @cache
+    def get_id_by_uuid(self, world_id: str) -> int:
+        resp = self._session.get(f"{self._GET_WORLD_API}/?worldId={world_id}")
+        resp.raise_for_status()
+        id_ = resp.json()["data"]["id"]
+        logger.info(f"Get id {id_} for run {world_id}.")
+        return id_
 
-    def get_world(self, world_id: str) -> Optional[WorldData]:
-        max_retries = 3
-        retry_delay = 2
-        attempt = 0
-
-        url = f"{self._GET_WORLD_API}/?worldId={world_id}"
-
-        while attempt < max_retries:
-            try:
-                response = self._session.get(url)
-                response.raise_for_status()
-                data = response.json()
-                return WorldData(**data)
-
-            except requests.exceptions.RequestException as e:
-                attempt += 1
-                logger.warning(f"请求失败 (尝试 {attempt}/{max_retries}): {e}")
-
-                if attempt < max_retries:
-                    time.sleep(retry_delay)
-                else:
-                    logger.error(f"达到最大重试次数，请求：{self._GET_WORLD_API} 最终失败")
-                    raise PacemanAPIUnavailableError(url, e) from e
-        return None
-
-# paceman_service = PacemanService()
+    def update_id(self, live_run: LiveRunData):
+        try:
+            live_run.id = self.get_id_by_uuid(live_run.worldId)
+        except:
+            return

@@ -1,5 +1,6 @@
 import logging
 import time
+from pathlib import Path
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from apscheduler.events import EVENT_JOB_ERROR
@@ -11,8 +12,9 @@ from obs_controller import OBSController
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import STATE_RUNNING, STATE_PAUSED
 
+from gui.status_notifier import status_notifier
 from ranked.video_info_generator import VideoInfoGenerator as RankedVideoInfoGenerator
-from ranked.ranked_service import RankedService
+from ranked.ranked_service import RankedService, MatchInfo
 from rsg.video_info_generator import VideoInfoGenerator as RsgVideoInfoGenerator
 from rsg.paceman_service import PacemanService
 from rsg.rsg_pb import RsgPb
@@ -29,12 +31,12 @@ scheduler_error_notifier = SchedulerErrorNotifier()
 class AutoClip:
     def listener(self, event):
         if event.exception:
-            scheduler_error_notifier.signal.emit(f"任务 {event.job_id} 执行出错！\n\n异常信息: {event.exception}\n\n"
+            scheduler_error_notifier.signal.emit(f"Job {event.job_id} failed to execute!\n\nException: {event.exception}\n\n"
                                                  f"Traceback:\n{event.traceback}")
 
     def on_obs_disconnect(self, obsws):
         if self.is_running:
-            logger.warning("OBS断连，停止任务的执行！")
+            logger.warning("OBS disconnected. Stopping job execution!")
             self.background_scheduler.pause()
 
     def __init__(self):
@@ -51,76 +53,76 @@ class AutoClip:
 
         self.background_scheduler.add_job(self._ranked_job, 'interval', seconds=10, id=self._ranked_job.__name__)
         self.background_scheduler.add_job(self._rsg_job, 'interval', seconds=10, id=self._rsg_job.__name__)
-        self.background_scheduler.add_job(self.obs_controller.clean, 'interval', minutes=2, id=self.obs_controller.clean.__name__)
-        self.background_scheduler.add_job(self._death_clip_job, 'interval', seconds=10, id=self._death_clip_job.__name__)
 
-
-    def _ranked_job(self):
-        latest_match = self.ranked_service.get_latest_match()
-        if latest_match is None:
-            return
-
-        raw_video_path = self.obs_controller.save_replay()
-        logger.info(f"存储了比赛[{latest_match.id_}]的录像：{raw_video_path}")
-
-        cut_video_path = ffmpeg_service.auto_cut(match_info=latest_match, video_path=raw_video_path)
-
-        # 接下来是上传的逻辑
-        if not latest_match.is_valid_for_upload():
-            return
-
-        match_data = self.ranked_service.get_match_data(latest_match.id_)
-        user_data = self.ranked_service.get_user_data()
-
-        video_info_generator = RankedVideoInfoGenerator(
-            match_data=match_data,
-            match_info=latest_match,
-            user_data=user_data,
-            video_path=cut_video_path
-        )
-        if config.use_upload:
-            self.bili_uploader.upload(video_info_generator.generate())
 
     def _rsg_job(self):
         live_run = self.paceman_service.get_latest_run()
         if live_run is None:
             return
 
-        if live_run.is_complete_run():
-            logger.info(f"本场rsg速通是完整速通，等待{config.wait_for_datapack}秒用于输入/datapack list和/seed等指令...")
+        if live_run.is_complete_run:
+            logger.info(f"Complete RSG run detected. Waiting {config.wait_for_datapack} seconds for /datapack list and /seed commands...")
+            status_notifier.message_signal.emit(f"Waiting {config.wait_for_datapack} seconds for /datapack list and /seed commands...", config.wait_for_datapack * 1000)
             time.sleep(config.wait_for_datapack)
 
-        world_data = self.paceman_service.get_world(live_run.worldId)
-
         raw_video_path = self.obs_controller.save_replay()
-        logger.info(f"存储了世界[{world_data.data.id}]的录像：{raw_video_path}")
+        logger.info(f"Saved replay for world [{live_run.id}]: {raw_video_path}")
 
-        cut_video_path = ffmpeg_service.rsg_cut(live_run=live_run, world_data=world_data, video_path=raw_video_path)
+        cut_video_path = ffmpeg_service.rsg_cut(live_run=live_run, video_path=raw_video_path)
+
+        video_info_generator = RsgVideoInfoGenerator(live_run=live_run, video_path=cut_video_path, rsg_pb=self.rsg_pb)
+        upload_info = video_info_generator.generate()
 
         # 接下来是上传的逻辑
-        if not live_run.is_valid_for_upload():
-            return
+        if not live_run.is_valid_for_upload and config.use_upload:
+            self.bili_uploader.upload(upload_info)
 
-        video_info_generator = RsgVideoInfoGenerator(
-            live_run=live_run, world_data=world_data, video_path=cut_video_path, rsg_pb=self.rsg_pb
-        )
-        if config.use_upload:
-            self.bili_uploader.upload(video_info_generator.generate())
         if config.use_rsg_pb:
-            self.rsg_pb.check_for_pb(bili_uploader=self.bili_uploader, live_run=live_run, world_data=world_data)
+            self.rsg_pb.check_for_pb(bili_uploader=self.bili_uploader, live_run=live_run)
+
+        if config.clean_raw_file:
+            raw_video_path.unlink()
+            logger.info(f"Raw video file deleted: {raw_video_path}")
 
 
-    def _death_clip_job(self):
+    def _ranked_job(self):
+        latest_match = self.ranked_service.get_latest_match()
         latest_match_data = self.ranked_service.get_latest_death_match()
-        if latest_match_data is None:
+
+        if latest_match is None and latest_match_data is None:
             return
 
         raw_video_path = self.obs_controller.save_replay()
-        logger.info(f"存储了比赛[{latest_match_data.id_}]的录像：{raw_video_path}")
+        logger.info(f"Saved replay for match [{latest_match.id_}]: {raw_video_path}")
 
-        cut_video_list = ffmpeg_service.death_clip(match_data=latest_match_data, video_path=raw_video_path)
+        if latest_match is not None:
+            self.ranked_any(match_info=latest_match, raw_video_path=raw_video_path)
 
-        # 不上传
+        if latest_match_data is not None:
+            cut_video_list = ffmpeg_service.death_clip(match_data=latest_match_data, video_path=raw_video_path)
+
+            # 不上传
+
+        if config.clean_raw_file:
+            raw_video_path.unlink()
+            logger.info(f"Raw video file deleted: {raw_video_path}")
+
+    def ranked_any(self, match_info: MatchInfo, raw_video_path: Path):
+        cut_video_path = ffmpeg_service.auto_cut(match_info=match_info, video_path=raw_video_path)
+        match_data = self.ranked_service.get_match_data(match_info.id_)
+        user_data = self.ranked_service.get_user_data()
+        video_info_generator = RankedVideoInfoGenerator(
+            match_data=match_data,
+            match_info=match_info,
+            user_data=user_data,
+            video_path=cut_video_path
+        )
+        upload_info = video_info_generator.generate()
+        if not match_info.is_valid_for_upload:
+            return
+        if config.use_upload:
+            self.bili_uploader.upload(upload_info)
+
 
     def run(self):
         self.background_scheduler.start()
@@ -153,26 +155,6 @@ class AutoClip:
             self.background_scheduler.resume()
         elif self.background_scheduler.state != STATE_RUNNING:
             self.background_scheduler.start()
-
-        if config.ranked_job:
-            self._safe_resume_job(self._ranked_job.__name__)
-        else:
-            self._safe_pause_job(self._ranked_job.__name__)
-
-        if config.rsg_job:
-            self._safe_resume_job(self._rsg_job.__name__)
-        else:
-            self._safe_pause_job(self._rsg_job.__name__)
-
-        if config.use_death_clip:
-            self._safe_resume_job(self._death_clip_job.__name__)
-        else:
-            self._safe_pause_job(self._death_clip_job.__name__)
-
-        if config.clean_raw_file:
-            self._safe_resume_job(self.obs_controller.clean.__name__)
-        else:
-            self._safe_pause_job(self.obs_controller.clean.__name__)
 
 
     def stop(self):

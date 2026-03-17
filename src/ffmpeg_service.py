@@ -3,11 +3,11 @@ from pathlib import Path
 import subprocess
 import json
 from dataclasses import dataclass
-from rsg.paceman_service import LiveRunData, WorldData
+from rsg.paceman_service import LiveRunData
 from config import config
 import shutil
 
-
+from gui.status_notifier import status_notifier
 from ranked.ranked_service import MatchInfo, MatchType, MatchData
 from my_exceptions import FfmpegNotConfiguredException
 from logger import setup_logger
@@ -33,12 +33,12 @@ class FfmpegService:
         if shutil.which(FfmpegService.FFPROBE_PATH) is None or shutil.which(FfmpegService.FFMPEG_PATH) is None:
             raise FfmpegNotConfiguredException()
 
-        logger.info("ffmpeg检查通过！")
+        logger.info("ffmpeg check passed!")
 
 
     @staticmethod
     def get_video_info(file_path: Path) -> VideoInfo:
-        logger.debug(f"正在获取视频{file_path}的信息")
+        logger.debug(f"Retrieving info for video: {file_path}")
         command = [
             str(FfmpegService.FFPROBE_PATH),
             "-v", "error",  # 只输出错误信息
@@ -48,9 +48,9 @@ class FfmpegService:
             "-print_format", "json",
             str(file_path)
         ]
-        logger.debug(f"正在运行: {' '.join(command)}")
+        logger.debug(f"Running command: {' '.join(command)}")
         result = subprocess.run(command, stdout=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
-        logger.debug(f"ffprobe标准输出：{result.stdout}")
+        logger.debug(f"ffprobe stdout: {result.stdout}")
         video_info = json.loads(result.stdout)
         # 提取相关信息
         stream = video_info["streams"][0]
@@ -71,7 +71,7 @@ class FfmpegService:
     @staticmethod
     def auto_cut(match_info: MatchInfo, video_path: Path) -> Path:
         if match_info.type_ == MatchType.PRIVATE_ROOM_MATCH:
-            logger.warning("当前为私人房间，如果未设置'当有人完成时比赛结束'则可能剪辑不准确！")
+            logger.warning("Private room match detected. Clips might be inaccurate if 'Match ends with completions' is not set to 0!")
         sseof_seconds = match_info.result.time // 1000 + config.extra_seconds_ranked
         input_extension = Path(video_path).suffix
         output_file_path = config.ranked_video_dir / f"match[{match_info.id_}]{input_extension}"
@@ -84,10 +84,11 @@ class FfmpegService:
             "-avoid_negative_ts", "1",
             str(output_file_path)
         ]
-        logger.debug(f"正在运行: {' '.join(cmd)}")
+        logger.debug(f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        logger.debug(f"ffmpeg标准输出：{result.stdout}")
-        logger.info(f"已生成切片{output_file_path}")
+        logger.debug(f"ffmpeg stdout: {result.stdout}")
+        logger.info(f"Generated clip: {output_file_path}")
+        status_notifier.message_signal.emit(f"Generated clip: {output_file_path}", 3000)
         return output_file_path
 
 
@@ -119,10 +120,10 @@ class FfmpegService:
                 "-avoid_negative_ts", "1",
                 str(output_file_path)
             ]
-            logger.debug(f"正在运行: {' '.join(cmd)}")
+            logger.debug(f"Running command: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            logger.debug(f"ffmpeg标准输出：{result.stdout}")
-            logger.info(f"已生成死亡切片{output_file_path}")
+            logger.debug(f"ffmpeg stdout: {result.stdout}")
+            logger.info(f"Generated death clip: {output_file_path}")
             ret.append(output_file_path)
             file_list.append(f"file '{output_file_path.name}'\n")
 
@@ -142,16 +143,16 @@ class FfmpegService:
                 "-frames:v", "1",
                 str(output_path),
         ]
-        logger.debug(f"正在运行: {' '.join(cmd)}")
+        logger.debug(f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        logger.debug(f"ffmpeg标准输出：{result.stdout}")
-        logger.info(f"已生成截图：{str(output_path)}")
+        logger.debug(f"ffmpeg stdout: {result.stdout}")
+        logger.info(f"Generated screenshot: {str(output_path)}")
 
     @staticmethod
-    def rsg_cut(live_run: LiveRunData, world_data: WorldData, video_path: Path) -> Path:
+    def rsg_cut(live_run: LiveRunData, video_path: Path) -> Path:
         sseof_seconds = live_run.rta + config.extra_seconds_rsg
         input_extension = Path(video_path).suffix
-        output_file_path = config.rsg_video_dir / f"world[{world_data.data.id}]{input_extension}"
+        output_file_path = config.rsg_video_dir / f"world[{live_run.id}]{input_extension}"
         cmd = [
             str(FfmpegService.FFMPEG_PATH),  "-y",
             "-sseof", f"-{sseof_seconds}",
@@ -161,10 +162,11 @@ class FfmpegService:
             "-avoid_negative_ts", "1",
             str(output_file_path)
         ]
-        logger.debug(f"正在运行: {' '.join(cmd)}")
+        logger.debug(f"Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        logger.debug(f"ffmpeg标准输出：{result.stdout}")
-        logger.info(f"已生成切片{output_file_path}")
+        logger.debug(f"ffmpeg stdout: {result.stdout}")
+        logger.info(f"Generated RSG clip: {output_file_path}")
+        status_notifier.message_signal.emit(f"Generated RSG clip: {output_file_path}", 3000)
         return output_file_path
 
 

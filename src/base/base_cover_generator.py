@@ -36,7 +36,7 @@ class BaseCoverGenerator(ABC):
                encoded = base64.b64encode(resource_file.read()).decode("utf-8")
                return f"data:{mime_type};base64,{encoded}"
        except Exception as e:
-           logger.warning(f"无法读取{resource_path}, 错误: {e}")
+           logger.warning(f"Failed to read {resource_path}, error: {e}")
            return ""
 
 
@@ -54,14 +54,14 @@ class BaseCoverGenerator(ABC):
 
             for channel in channels:
                 try:
-                    logger.debug(f"正在尝试使用 {channel} 启动浏览器...")
+                    logger.debug(f"Attempting to launch browser using {channel}...")
                     browser = p.chromium.launch(channel=channel)
                     break
                 except Exception as e:
-                    logger.info(f"无法使用 {channel} 启动: {e}")
+                    logger.info(f"failed to launch using {channel}: {e}")
 
             if not browser:
-                logger.warning("错误：无法启动 Chrome 或 Edge 浏览器。")
+                logger.warning("Unable to launch Chrome or Edge browser.")
                 return None
 
             try:
@@ -82,15 +82,15 @@ class BaseCoverGenerator(ABC):
                 """)
 
                 if image_load_errors:
-                    logger.warning(f"图片未成功渲染：{image_load_errors}")
+                    logger.warning(f"Images failed to render: {image_load_errors}")
                     return None
 
                 page.screenshot(path=output_path)
-                logger.info(f"封面已生成至：{output_path}")
+                logger.info(f"Cover generated at: {output_path}")
                 return output_path
 
             except Exception as e:
-                logger.warning(f"封面生成过程中发生错误：{e}")
+                logger.warning(f"Error occurred during cover generation: {e}")
                 return None
             finally:
                 browser.close()
@@ -132,11 +132,11 @@ class BaseCoverGenerator(ABC):
 
         html_path = self.get_html_path()
         html_path.write_text(html_content, encoding="utf-8")
-        logger.debug(f"封面html文件已写入 {html_path}")
+        logger.debug(f"Cover HTML written to: {html_path}")
 
         ret = self.capture_screenshot(html_content, self.get_save_path())
         if ret is None:
-            logger.warning(f"封面生成时出错，直接使用 {bg_path} 作为封面")
+            logger.warning(f"Error generating cover; falling back to: {bg_path}")
             return bg_path
 
         return ret

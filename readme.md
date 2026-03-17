@@ -116,7 +116,6 @@
   "extra_seconds_ranked": 15,
   "extra_seconds_rsg": 0,
   "wait_for_datapack": 20,
-  "replay_threshold_seconds": 20,
   
   "clean_raw_file": true,
   "use_death_clip": true, 
@@ -157,7 +156,6 @@
 | `extra_seconds_ranked`           | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为15，如果剪漏了可以适当调大（秒）        |
 | `extra_seconds_rsg`              | Number  | 视频是从末尾开始剪辑的，剪辑时长为 `RTA + extra_seconds`<br/>默认值为0，如果剪漏了可以适当调大（秒）         |
 | `wait_for_datapack`              | Number  | rsg完成一场速通后，会等待一段时间再结束录像，期间可以输入种子、datapack list等。默认值为30（秒）                |
-| `replay_threshold_seconds`       | Number  | 在该数值范围内的录像请求都会共用同一个原始文件                                                  |
 | `clean_raw_file`                 | Boolean | 是否要清理原始文件                                                                |
 | `use_death_clip`                 | Boolean | 是否启用死亡切片                                                                 |
 | `ranked_job`                     | Boolean | 是否启用ranked切片功能                                                           |

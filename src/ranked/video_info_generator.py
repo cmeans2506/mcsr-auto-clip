@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -26,9 +25,9 @@ class VideoInfoGenerator(BaseVideoInfoGenerator):
         title = f"RANKED {util.ts_to_str_sec(self.match_data.result.time)}"
         if (self.match_data.type_ == MatchType.RANKED_MATCH
                 and self.match_data.result.time <= self.user_data.statistics.total.bestTime.ranked):
-            title += " 个人最佳"
+            title += "PB"
         if self.match_data.type_ == MatchType.PRIVATE_ROOM_MATCH:
-            title += " 私人房间"
+            title += "Private"
         return title
 
     def get_title_file_path(self) -> Path:
@@ -59,7 +58,7 @@ class VideoInfoGenerator(BaseVideoInfoGenerator):
         ).generate()
 
     def generate_video_tags(self) -> list[str]:
-        return ["游戏", "单机游戏", "我的世界", "MC", "速通", "MCSR", "RANKED", "速通排位赛"]
+        return ["Minecraft", "MC", "Speedrun", "MCSR", "RANKED"]
 
     def get_video_path(self) -> Path:
         return self.video_path

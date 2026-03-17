@@ -3,12 +3,12 @@ from pathlib import Path
 from datetime import datetime
 import time
 from string import Template
+from PyQt6.QtCore import QCoreApplication
 
 from base.base_description_generator import BaseDescriptionGenerator
 from config import config
-from translator import translator
 import util
-from rsg.paceman_service import LiveRunData, WorldData, Event, ContextEvent, User, RunData
+from rsg.paceman_service import LiveRunData, Event, User, EventIdType
 from rsg.rsg_pb import RsgPb
 from logger import setup_logger
 
@@ -16,27 +16,25 @@ logger = setup_logger(__name__)
 
 
 class DescriptionGenerator(BaseDescriptionGenerator):
-    def __init__(self, live_run: LiveRunData, world_data: WorldData, video_path: Path, rsg_pb: RsgPb):
+    def __init__(self, live_run: LiveRunData, video_path: Path, rsg_pb: RsgPb):
         self._live_run = live_run
-        self._world_data = world_data
         self._video_path = video_path
         self.rsg_pb = rsg_pb
         super().__init__(video_path=video_path)
-
-        self.sub_template = Template(inspect.cleandoc("""        
-
-            ■ 分段详情
+        self.sub_template = Template(inspect.cleandoc(
+            QCoreApplication.translate("RSGDescriptionGenerator", """                    
+            ■ Timelines
             $timelines_info
 
-            ■ 个人最佳
+            ■ PB Info
             $pb_info
 
-        """))
+        """)))
 
 
     def _generate_timelines_info(self):
         def event_to_str(event: Event) -> str:
-            event_str = f"{util.ts_to_str_sec(event.igt)} {translator.event_map[event.eventId]}"
+            event_str = f"{util.ts_to_str_sec(event.igt)} {event.eventId.label}"
             if config.use_rsg_pb and self.rsg_pb.is_pb(event):
                 event_str += " pb"
             return event_str
@@ -47,14 +45,14 @@ class DescriptionGenerator(BaseDescriptionGenerator):
     def _generate_pb_info(self):
         if not config.use_rsg_pb:
             return None
-        def get_pb_str(key):
+        def get_pb_str(key: EventIdType):
             if not self.rsg_pb.pb_info[key].igt:
                 return ""
             pb_time = datetime.fromtimestamp(self.rsg_pb.pb_info[key].time).strftime("%Y-%m-%d")
-            pb_str = (f"·{translator.event_map[key]}\t{util.ts_to_str(self.rsg_pb.pb_info[key].igt)}"
+            pb_str = (f"·{key.label}\t{util.ts_to_str(self.rsg_pb.pb_info[key].igt)}"
                       f" | {pb_time}"
-                      f" | 距今 {int((time.time() - self.rsg_pb.pb_info[key].time) / (60 * 60 * 24))} 天"
-                      f" | 链接：{self.rsg_pb.pb_info[key].bvid or '无'}")
+                      f" | {int((time.time() - self.rsg_pb.pb_info[key].time) / (60 * 60 * 24))} days ago"
+                      f" | link: {self.rsg_pb.pb_info[key].bvid}")
             return pb_str
 
         return "\n".join(list(filter(None, map(get_pb_str, self.rsg_pb.pb_info))))
@@ -71,10 +69,10 @@ class DescriptionGenerator(BaseDescriptionGenerator):
                 continue
             upload_setting_list.append(f"{CIRCLE_NUMBERS[i]} sub"
                               f"{util.ts_to_str_sec(config.upload_setting.rsg[key])} "
-                              f"{translator.event_map[key]}")
+                              f"{EventIdType(key).label}")
             i += 1
         upload_reason += " | ".join(upload_setting_list)
-        upload_reason += "\n本场速通满足：\n"
+        upload_reason += "\nThis run satisfies: \n"
 
         upload_reason_list = []
         i = 0
@@ -82,34 +80,35 @@ class DescriptionGenerator(BaseDescriptionGenerator):
             if event.igt < config.upload_setting.rsg[event.eventId]:
                 upload_reason_list.append(f"{CIRCLE_NUMBERS[i]} sub"
                                           f"{util.ts_to_str_sec(config.upload_setting.rsg[event.eventId])} "
-                                          f"{translator.event_map[event.eventId]}")
+                                          f"{event.eventId.label}")
                 i += 1
-        upload_reason += " | ".join(upload_reason_list)
+        upload_reason += " | ".join(upload_reason_list) or "None"
         return upload_reason
 
 
     def generate_about_info(self):
         return inspect.cleandoc(f"""
 
-            · paceman：https://paceman.gg/stats/run/{self._world_data.data.id}/
-            · api：https://paceman.gg/stats/api/getWorld/?worldId={self._world_data.data.id}
+            · paceman：https://paceman.gg/stats/run/{self._live_run.id}/
+            · api：https://paceman.gg/stats/api/getWorld/?worldId={self._live_run.id}
 
         """)
 
     def generate_sub_template(self) -> str:
         return self.sub_template.safe_substitute(
             timelines_info=self._generate_timelines_info(),
-            pb_info=self._generate_pb_info() or "无",
+            pb_info=self._generate_pb_info() or "None",
         )
 
     def get_desc_path(self) -> Path:
-        return config.rsg_video_dir / f'desc[{self._world_data.data.id}].txt'
+        return config.rsg_video_dir / f'desc[{self._live_run.id}].txt'
 
 
 if __name__ == '__main__':
 
     _desc_generator = DescriptionGenerator(
         live_run=LiveRunData(
+            id=123456,
             worldId="3824376fdaf982a2e999f6fb8c075dd4149ef441e586689dcbb55b781d69cc0c",
             gameVersion="1.16.1",
             eventList=[
@@ -144,56 +143,15 @@ if __name__ == '__main__':
                     igt=957276
                 )
             ],
-            contextEventList=[
-                ContextEvent(
-                    eventId="rsg.obtain_iron_ingot",
-                    rta=20567,
-                    igt=18952
-                ),
-                ContextEvent(
-                    eventId="rsg.obtain_iron_pickaxe",
-                    rta=67713,
-                    igt=66123
-                ),
-                ContextEvent(
-                    eventId="rsg.obtain_lava_bucket",
-                    rta=184160,
-                    igt=182573
-                ),
-                ContextEvent(
-                    eventId="rsg.obtain_crying_obsidian",
-                    rta=300013,
-                    igt=292775
-                ),
-                ContextEvent(
-                    eventId="rsg.obtain_obsidian",
-                    rta=300013,
-                    igt=292775
-                ),
-                ContextEvent(
-                    eventId="rsg.loot_bastion",
-                    rta=377213,
-                    igt=366075
-                ),
-                ContextEvent(
-                    eventId="rsg.obtain_blaze_rod",
-                    rta=616613,
-                    igt=604475
-                )
-            ],
             user=User(
                 uuid="8ee48ee6-7cfe-495a-8051-40d7a31ebb91",
-                liveAccount=None
             ),
             isCheated=False,
             isHidden=False,
-            numLeaves=0,
             lastUpdated=1753606925065,
-            itemData=None,
             nickname="Wojcio234"
         ),
-        world_data=WorldData(data=RunData(id=0, worldId="", nickname="", uuid="", insertTime=0, updateTime=0), time=0, isLive=False),
-        video_path=Path(r"D:\视频\ranked\20260122\match[5330969].mp4"),
+        video_path=Path(r"D:\OBS VIdeos\2025-03-06 15-52-44.mp4"),
         rsg_pb=RsgPb()
     )
 

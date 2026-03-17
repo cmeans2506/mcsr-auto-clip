@@ -52,7 +52,7 @@
             color: #fff;
             font-size: 150px;
 
-            {% if world_data.data.finish %}
+            {% if is_complete_run %}
             text-shadow: 0 0 10px rgba(0, 0, 255, 0.8),
             0 0 20px rgba(0, 0, 255, 0.6);
             {% else %}
@@ -113,10 +113,7 @@
 <div class="corner-image-container">
     <img class="corner-image" src="{{corner_image_src}}" alt="Corner Image"/>
     <div class="corner-caption">
-        world id<br/>[{{world_data.data.id}}]
-        {% if points %}
-        <br/>{{ points }} pts
-        {%endif%}
+        world id<br/>[{{id}}]
     </div>
 </div>
 </body>

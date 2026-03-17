@@ -5,6 +5,7 @@ from string import Template
 from ffmpeg_service import ffmpeg_service
 from dataclasses import asdict
 from config import VERSION
+from PyQt6.QtCore import QCoreApplication
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -14,25 +15,24 @@ class BaseDescriptionGenerator(ABC):
     def __init__(self, video_path: Path):
         self.video_path = video_path
 
-        self.base_desc_template = Template(inspect.cleandoc("""
-        
-            本视频为自动投稿
-            
+        self.base_desc_template = Template(inspect.cleandoc(
+            QCoreApplication.translate("BaseDescriptionGenerator", """
             $sub_template
             
-            ■ 投稿条件
+            ■ Upload Conditions
             $upload_reason
                         
-            ■ 相关链接
+            ■ Links
             $about_info
                         
-            ■ 视频信息
+            ■ Video Info
             $video_info
                         
-            ■ 项目信息
+            ■ Repository Info
             $repository_info
                      
-        """))
+        """)
+        ))
 
     @abstractmethod
     def generate_upload_reason(self) -> str:
@@ -74,6 +74,6 @@ class BaseDescriptionGenerator(ABC):
         )
         desc_path = self.get_desc_path()
         desc_path.write_text(desc)
-        logger.debug(f"简介内容已经输出至{desc_path}")
+        logger.debug(f"Description has been written to: {desc_path}")
         return desc
 

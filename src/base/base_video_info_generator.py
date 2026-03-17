@@ -45,7 +45,7 @@ class BaseVideoInfoGenerator(ABC):
         title = self.get_video_title()
         title_file_path = self.get_title_file_path()
         title_file_path.write_text(title, encoding="utf8")
-        logger.debug(f"视频标题已经输出至{title_file_path}")
+        logger.debug(f"Title has been written to: {title_file_path}")
         return title
 
     @abstractmethod
