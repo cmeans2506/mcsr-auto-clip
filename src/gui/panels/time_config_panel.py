@@ -29,8 +29,8 @@ class TimeConfigPanel(QWidget):
         # 模式选择
         mode_group = QGroupBox(self.tr("MODE"))
         self.mode_combo = QComboBox()
-        self.mode_combo.addItem(self.tr("Clip Setting"), config.clip_setting)
-        self.mode_combo.addItem(self.tr("Upload Setting"), config.upload_setting)
+        self.mode_combo.addItem(self.tr("Clip Setting"))
+        self.mode_combo.addItem(self.tr("Upload Setting"))
         self.mode_combo.setCurrentIndex(0)
 
         mode_layout = QVBoxLayout()
@@ -196,8 +196,7 @@ class TimeConfigPanel(QWidget):
     def _load_current_match_config(self):
         """加载当前选中的匹配类型配置"""
         match_type: MatchType = self.match_type_combo.currentData()
-        setting: Setting = self.mode_combo.currentData()
-        # setting = config.clip_setting if self.mode_combo.currentIndex() == 0 else config.upload_setting
+        setting = config.clip_setting if self.mode_combo.currentIndex() == 0 else config.upload_setting
 
         ranked_config = setting.ranked[match_type.name]
         rsg_config = setting.rsg

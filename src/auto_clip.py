@@ -74,7 +74,7 @@ class AutoClip:
         upload_info = video_info_generator.generate()
 
         # 接下来是上传的逻辑
-        if not live_run.is_valid_for_upload and config.use_upload:
+        if live_run.is_valid_for_upload and config.use_upload:
             self.bili_uploader.upload(upload_info)
 
         if config.use_rsg_pb:
@@ -118,9 +118,7 @@ class AutoClip:
             video_path=cut_video_path
         )
         upload_info = video_info_generator.generate()
-        if not match_info.is_valid_for_upload:
-            return
-        if config.use_upload:
+        if match_info.is_valid_for_upload and config.use_upload:
             self.bili_uploader.upload(upload_info)
 
 

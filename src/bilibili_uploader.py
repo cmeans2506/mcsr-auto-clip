@@ -135,6 +135,7 @@ class BiliUploader:
             str(video_info.video_path),
         ]
         logger.info(f"Uploading: {video_info.video_title}")
+        status_notifier.message_signal.emit(f"Uploading: {video_info.video_title}", 600000)
         logger.debug(f"Running command: {' '.join(cmd)}")
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True,
